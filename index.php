@@ -26,6 +26,7 @@ $app->get("/probando", function() use($app){
 	echo "Otro texto cualquiera";
 });
 
+/** ---------------------------------- RESTAURANTES --------------------------------- **/
 //LISTAR TODOS LOS RESTAURANTES
 $app->get('/restaurantes', function() use ($app, $db){
 	//hacemos una consulta sql para sacar todos los restaurantes de la BD
@@ -39,12 +40,20 @@ $app->get('/restaurantes', function() use ($app, $db){
 		$restaurantes[] = $restaurante;
 	}
 
-	$result = array(
-		'status' => 'success',
-		'code' => 200,
-		//con esto al devolver la variable result, devolvemos tb el array de objetos ($restaurantes)
-		'data' => $restaurantes
-	);
+	if (empty($restaurantes)){
+		$result = array(
+			'status' => 'error',
+			'code' => 404,
+			'message' => 'No hay restaurantes para mostrar'
+		);
+	} else {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			//con esto al devolver la variable result, devolvemos tb el array de objetos ($restaurantes)
+			'data' => $restaurantes
+		);
+	}
 	echo json_encode($result);
 
 });
@@ -72,7 +81,6 @@ $app->get('/restaurantes/:id', function($id) use ($app, $db){
 	} 
 	echo json_encode($result);
 });
-
 
 //INSERTAR UN RESTAURANTE
 $app->post('/restaurantes', function() use ($app, $db){
