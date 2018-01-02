@@ -6,7 +6,6 @@ $app = new \Slim\Slim();
 
 //Conexión con la base de datos
 $db = new mysqli('localhost', 'root', '', 'opentravel');
-
 //Configuración de las cabeceras http.....
 header('Access-Control-Allow-Origin: *');
 header("Access-Control-Allow-Headers: X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Request-Method");
@@ -16,192 +15,12 @@ $method = $_SERVER['REQUEST_METHOD'];
 if($method == "OPTIONS") {
     die();
 }
-/* -------------------- */
 
-$app->get("/pruebas", function() use ($app, $db){
-	echo "Hola mundo";
-});
+/* ----------------------------------------------------------*/
+/** MÉTODOS COMUNES **/
 
-$app->get("/probando", function() use($app){
-	echo "Otro texto cualquiera";
-});
-
-/** ---------------------------------- RESTAURANTES --------------------------------- **/
-//LISTAR TODOS LOS RESTAURANTES
-$app->get('/restaurantes', function() use ($app, $db){
-	//hacemos una consulta sql para sacar todos los restaurantes de la BD
-	$sql = 'SELECT * FROM restaurantes ORDER BY id DESC;';
-	//ejecutamos la consulta en la base de datos
-	$query = $db->query($sql);
-	//fetch all saca todos los restaurantes sin necesidad de tener que hacer un bucle para recorrer los elementos
-	//var_dump($query->fetch_all());
-	//vamos a usar un bucle while para poder tener los restaurantes en un array de objetos
-	while ($restaurante = ($query->fetch_assoc())) {
-		$restaurantes[] = $restaurante;
-	}
-
-	if (empty($restaurantes)){
-		$result = array(
-			'status' => 'error',
-			'code' => 404,
-			'message' => 'No hay restaurantes para mostrar'
-		);
-	} else {
-		$result = array(
-			'status' => 'success',
-			'code' => 200,
-			//con esto al devolver la variable result, devolvemos tb el array de objetos ($restaurantes)
-			'data' => $restaurantes
-		);
-	}
-	echo json_encode($result);
-
-});
-
-//LISTAR UN RESTAURANTE (ID)
-$app->get('/restaurantes/:id', function($id) use ($app, $db){
-	$sql = 'SELECT * FROM restaurantes WHERE id = '.$id.';';
-	$query = $db->query($sql);
-	
-	$result = array(
-		'status' => 'error',
-		'code' => 404,
-		'message' => 'restaurante no encontrado'
-	);
-
-	//si la query nos devuelve una columna es que el resultado está correcto
-	if ($query->num_rows == 1) {
-		//conseguimos el producto de la base de datos
-		$restaurante = $query->fetch_assoc();
-		$result = array(
-			'status' => 'success',
-			'code' => 200,
-			'data' => $restaurante
-		);
-	} 
-	echo json_encode($result);
-});
-
-//INSERTAR UN RESTAURANTE
-$app->post('/restaurantes', function() use ($app, $db){
-	//creamos una variable que se llame Json en la que vamos a recoger el valor de la variable request. La variable que nos llega por post se va a llamar json.
-	$json = $app->request->post('json');
-	//una vez tenemos el json, vamos a decodificar el valor de la variable.
-	//el parámetro true, hace que nos convierta ese objeto en un array
-	$data = json_decode($json, true);
-	
-	//vamos a hacer un if para todos los parámetros que no son obligatorios
-	//dirección
-	if(!isset($data['direccion'])){
-		$data['direccion']=null;
-	}
-	//latitud
-	if(!isset($data['latitud'])){
-		$data['latitud']=null;
-	}
-	//longitud
-	if(!isset($data['longitud'])){
-		$data['longitud']=null;
-	}
-	//url
-	if(!isset($data['url'])){
-		$data['url']=null;
-	}
-	if(!isset($data['imagen'])){
-		$data['imagen']=null;
-	}
-
-	//hacer una query a la base de datos
-	$query = "INSERT INTO restaurantes VALUES(NULL,".
-			"'{$data['nombre']}',".
-			"'{$data['direccion']}',".
-			"'{$data['latitud']}',".
-			"'{$data['longitud']}',".
-			"'{$data['url']}',".
-			"'{$data['imagen']}'".
-			");";
-
-	//vamos a insertar la query en la bd
-	$insert = $db->query($query);
-
-	//ponemos un result por defecto de error, en caso de que se haga correctamente cambiará el valor
-	$result = array(
-		'status' => 'error',
-		'code' => 404,
-		'message' => 'Restaurante no creado'
-	);
-	
-	//comprobación de la inseción
-	if ($insert){
-		$result = array(
-		'status' => 'success',
-		'code' => 200,
-		'message' => 'Restaurante creado'
-	);
-	}
-
-	//mostramos el rsultado de la consulta
-	echo json_encode($result);
-});
-
-//BORRAR UN RESTAURANTE
-$app->get('/delete-restaurantes/:id', function($id) use ($app, $db){
-	$sql = 'DELETE FROM restaurantes WHERE id = '.$id.';';
-	$query = $db->query($sql);
-
-	if ($query){
-		$result = array(
-			'status' => 'success',
-			'code' => 200,
-			'message' => 'Restaurante '.$id.' borrado'
-		);
-	} else {
-		$result = array(
-		'status' => 'error',
-		'code' => 404,
-		'message' => 'Restaurante'.$id.' no eliminado'
-		);
-	}
-	echo json_encode($result);
-});
-
-//ACTUALIZAR UN RESTAURANTE
-$app->post('/update-restaurantes/:id', function($id) use ($app, $db){
-	$json = $app->request->post('json');
-	$data = json_decode($json, true);
-
-	$sql = "UPDATE restaurantes SET ".
-			"nombre = '{$data["nombre"]}', ".
-			"direccion = '{$data["direccion"]}', ".
-			"latitud = '{$data["latitud"]}', ".
-			"longitud = '{$data["longitud"]}', ";
-
-	if (isset($data['imagen'])){
-		$sql .="imagen = '{$data["imagen"]}', ";
-	}
-
-	$sql .= "url = '{$data["url"]}' WHERE id = {$id};";
-	//var_dump($sql);
-	$query = $db->query($sql);
-
-	if ($query) {
-		$result = array(
-			'status' => 'success',
-			'code' => 200,
-			'message' => 'Restaurante '.$id.' actualizado'
-		);
-	} else {
-		$result = array(
-		'status' => 'error',
-		'code' => 404,
-		'message' => 'Restaurante'.$id.' no actualizado'
-		);
-	}
-	echo json_encode($result);
-});
-
-//SUBIR UNA IMAGEN A UN RESTAURANTE
-$app->post('/upload-file', function() use($db, $app){
+//SUBIR UNA IMAGEN
+$app->post('/upload-image', function() use($db, $app){
 	$result = array(
 		'status' 	=> 'error',
 		'code'		=> 404,
@@ -230,8 +49,274 @@ $app->post('/upload-file', function() use($db, $app){
 			);
 		}
 	}
-
 	echo json_encode($result);
+});
+
+//Subir un dataset: ya sea json o csv
+$app->post('/upload-dataset', function() use($db, $app){
+	$correcto = false;
+	$result = array(
+		'status' 	=> 'error',
+		'code'		=> 404,
+		'message' 	=> 'El archivo no ha podido subirse'
+	);
+
+	if (isset($_FILES['uploads'])){
+		$piramideUploader = new PiramideUploader();
+		/*
+		prefijo de los ficheros - 'dataset'
+		name del fichero que nos llega por $_FILES - "uploads"
+		directorio donde se va a guardar - "uploads/datasets"
+		tipo de ficheros permitidos - array('dataset/json')
+		*/
+		
+		$fichero = $_FILES['uploads']['name'];
+		$namefichero = explode(".", $fichero[0]);
+		$extension = $namefichero[sizeof($namefichero)-1];
+		if ($extension == 'csv'){
+			$result = array(
+				'message' 	=> 'csv',
+				'fichero' => $fichero[0],
+				'sizeof'	=> sizeof($namefichero),
+				'extension'		=> $extension,
+				'namefichero' => $namefichero
+			);
+			$correcto = true;
+			$upload = $piramideUploader->uploadDataset('dataset', "uploads", "uploads/datasets/csv");
+		}
+		elseif ($extension == 'json') {
+			$result = array(
+				'message' 	=> 'json'
+			);
+			$correcto = true;
+			$upload = $piramideUploader->uploadDataset('dataset', "uploads", "uploads/datasets/json");
+		}
+		else { //otros formatos
+			$correcto = false;
+		}
+		if ($correcto){
+			$file = $piramideUploader->getInfoFile();
+			$file_name = $file['complete_name'];
+			if(isset($upload) && $upload["uploaded"] == false){
+				$result = array(
+					'status' 	=> 'error',
+					'code'		=> 404,
+					'message' 	=> 'El archivo no ha podido subirse',
+					'filename'  => $file_name
+				);
+			}else{
+				$result = array(
+					'status' 	=> 'success',
+					'code'		=> 200,
+					'message' 	=> 'El archivo se ha subido',
+					'filename'  => $file_name
+				);
+			}
+		}
+		else {
+			$result = array(
+				'status' 	=> 'error',
+				'code'		=> 404,
+				'message' 	=> 'Formato no compatible'
+			);
+		}
+			
+	}
+	echo json_encode($result);
+		
+		/*$upload = $piramideUploader->uploadDataset('dataset', "uploads", "uploads/datasets");
+		$file = $piramideUploader->getInfoFile();
+		$file_name = $file['complete_name'];
+
+		if(isset($upload) && $upload["uploaded"] == false){
+			$result = array(
+				'status' 	=> 'error',
+				'code'		=> 404,
+				'message' 	=> 'El archivo no ha podido subirse',
+				'filename'  => $file_name
+			);
+		}else{
+			$result = array(
+				'status' 	=> 'success',
+				'code'		=> 200,
+				'message' 	=> 'El archivo se ha subido',
+				'filename'  => $file_name
+			);
+		}
+	}
+	echo json_encode($result);*/
+});	
+
+/*buscar dataset según el nombre y obtener sus fields (valido para ficheros csv)
+Una vez obtenido sus fields, se le pasa al cliente para que el admin haga el emparejamiento
+con los atributos de la BD */
+$app->get('/dataset-fields/:nombre', function($nombre) use($app){
+	$namefichero = explode(".", $nombre);
+	$extension = $namefichero[sizeof($namefichero)-1];
+	if ($extension == "csv"){
+		$directory = "uploads/datasets/csv";
+	}
+	elseif($extension == "json"){
+		$directory = "uploads/datasets/json";
+	}	
+	$dirint = dir($directory);
+	$fields = array();
+    $fila = 1;
+
+	while (($archivo = $dirint->read()) !== false) {
+        if ($archivo == $nombre){
+        	if ($extension == "csv"){
+	        	$csv = file_get_contents("./uploads/datasets/csv/$nombre");
+	        	if (($gestor = fopen("./uploads/datasets/csv/$nombre", "r")) !== FALSE) {
+			        while ((($datos = fgetcsv($gestor, 1000, ",")) !== FALSE) && ($fila <=2)) {
+			            $fila++;
+			            if ($fila <=2){
+			                $fields = $datos;
+			            }
+			        }
+			    }
+		        fclose($gestor);
+		        $result = array(
+					'status' 	=> 'success',
+					'code'		=> 200,
+					'data' 		=> $fields
+				);
+		    }
+		    else {
+		    	//hacerlo para --> json <--
+		    	$result = array(
+					'message' 	=> 'implementar para json',
+				);
+		    }
+		} else {
+			$result = array(
+				'status' 	=> 'error',
+				'code'		=> 404,
+				'message' 	=> 'El archivo no existe',
+				'extension' => $extension,
+				'archivo'	=> $archivo,
+				'nombre'	=> $nombre
+			);
+		}
+    }
+    $dirint->close();
+    echo json_encode($result);
+});
+
+
+
+$app->post('/up-dataset/:filename', function($filename) use ($app, $db) {
+	$json = $app->request->post('json');
+	$data = json_decode($json, true); //aquí tengo el objeto restaurante con los campos que debo coger del fichero csv
+	
+	/* 1. Tengo que obtener el fichero csv */
+	$directory = "uploads/datasets";
+	$dirint = dir($directory);
+	$fields = array();
+    $info = array();
+    $jsonArray = array();
+    $fila = 1;
+    $i = 0;
+    $insertado = false;
+    while (($archivo = $dirint->read()) !== false) {
+        if ($archivo == $filename){
+        	$json = file_get_contents("./uploads/datasets/$filename");
+        	if (($gestor = fopen("./uploads/datasets/$filename", "r")) !== FALSE) {
+        		/* 2. Una vez tengo el fichero csv, tengo que obtener todos los datos del fichero y guardarlos en $info */
+        		 while (($datos = fgetcsv($gestor, 1000, ",")) !== FALSE) {
+        		 	$numero = count($datos);
+		            $fila++;
+		            if ($fila <=2){
+		                $fields = $datos;
+		            }
+		            elseif ($fila > 2){
+		            	$info[$i] = $datos;
+		                $i++;
+		            }
+		        }
+		        fclose($gestor);
+		    }
+		    /* 3. Una vez tengo todos los datos, tengo que hacer un for que recorra tantas veces como elementos tenga en info */
+		    $sql = 'DESCRIBE restaurantes';
+			$query = $db->query($sql);
+			while($row = $query->fetch_assoc()){
+				$campos[] = $row['Field'];
+			}
+
+		    $encFields = false;
+		    $item = 0;
+		    // Por cada elemento de info, tengo que recorrer los atributos de la bd
+		    for ($a = 0; $a<count($info); $a++){
+		    	//----- EMPIEZA LA CONSULTA PARA INSERTAR -------
+				$queryIns = "INSERT INTO restaurantes VALUES(NULL, ";
+		    	$longInfoItem = count($info[$a]);
+		    	// por cada atributo de la bd, tengo que comprobar que esté en data(key), y, si está, sacar el data(value)
+		    	$longCampos = count($campos);
+		    	for ($c=1; $c<$longCampos; $c++) {
+		    		$nameAtr = $campos[$c];
+		    		$nameData = $data[strval($campos[$c])];
+		    		if(empty(!$nameData)){
+		    			$d = 0;
+	    				$longFields = count($fields);
+	    				$encFields = false;
+	    				while (($d < $longFields) && ($encFields==false)){
+							if ($nameData == $fields[$d]){
+								$item = $d;
+								$encFields = true;
+								$nameFields = $fields[$d];
+								$jsonArray[$c]=$info[$a][$item];
+								/* en jsonArray[c] tenemos cada elemento que hay que meter en la tupla de la bd */
+								$valor = strval($info[$a][$item]);
+								$queryIns .="'".$valor."'";
+
+							}
+							else $d++;	
+	    				}		
+		    		}
+		    		else {
+		    			$queryIns .="NULL";
+		    		}
+		    		if ($c!=$longCampos-1)
+		    			$queryIns .=", ";
+		    	}
+		    	/*INSERTAR LA TUPLA EN LA BD */ 
+		    	//aqui tenemos el array con todos los atributos para insertar en la tupla, en jsonArray
+		    	$queryIns .=");";
+		    	$insert = $db->query($queryIns);
+		    	if ($insert){
+		    		$insertado = true;
+		    	}
+			} 
+		    $result = array(
+				'status' 	=> 'success',
+				'code'		=> 200,
+				'campos'	=> $campos,
+				'longCampos' => $longCampos,
+				'nameData' => $nameData,
+				'nameAtr' 	=> $nameAtr,
+				'longFields' => $longFields,
+				'fields'	=> $fields,
+				'nameFields' => $nameFields,
+				'jsonArray'	=> $jsonArray,
+				'item'		=> $item,
+				'a'			=> $a,
+				'info'		=> $info,
+				'data'		=> $data,
+				'longInfoItem' => $longInfoItem,
+				'insertado' => $insertado,
+				'valor'		=> $valor,
+				'queryIns'	=> $queryIns
+			);
+		} else {
+			$result = array(
+				'status' 	=> 'error',
+				'code'		=> 404,
+				'message' 	=> 'El archivo no existe'
+			);
+		}
+	}
+	$dirint->close();
+    echo json_encode($result);
 });
 
 $app -> run();

@@ -24,3 +24,18 @@ CREATE TABLE usuarios (
 	CONSTRAINT pk_usuarios PRIMARY KEY (id),
 	UNIQUE (alias, email)
 )ENGINE=InnoDb;
+
+CREATE TABLE opiniones_restaurantes (
+	id 				int(255) auto_increment not null,
+	id_restaurante	int(255) not null,
+	id_usuario		int(255) not null,
+	puntuacion		int(10) not null,
+	fecha 			TIMESTAMP DEFAULT CURRENT_TIMESTAMP  ON UPDATE CURRENT_TIMESTAMP,
+	mensaje			varchar(420),
+	CONSTRAINT pk_opinionesRestaurantes PRIMARY KEY (id),
+	CONSTRAINT fk_idrestaurante FOREIGN KEY (id_restaurante) REFERENCES restaurantes(id) ON DELETE CASCADE ON UPDATE CASCADE,
+	CONSTRAINT fk_idusuario FOREIGN KEY (id_usuario) REFERENCES usuarios (id) ON DELETE CASCADE ON UPDATE CASCADE
+)ENGINE=InnoDb;
+
+
+

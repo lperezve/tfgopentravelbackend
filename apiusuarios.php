@@ -62,8 +62,9 @@ $app->get('/usuarios/:id', function($id) use ($app, $db){
 });
 
 /* Comprobar si existe un usuario */
-$app->get('/usuarionombre/:nombre', function($nombre) use ($app, $db){
-	$sql = "SELECT * FROM usuarios WHERE nombre = '$nombre';";
+$app->get('/existeusuario/:email/:password', function($email, $password) use ($app, $db){
+	$cifrado = md5($password);
+	$sql = "SELECT * FROM usuarios WHERE email = '$email' AND password = '$cifrado';";
 	$query = $db->query($sql);
 	$result = array(
 		'status' => 'error',
@@ -83,7 +84,8 @@ $app->get('/usuarionombre/:nombre', function($nombre) use ($app, $db){
 
 /* Comprobar que el usuario está registrado */
 $app->get('/login/:email/:password', function($email, $password) use ($app, $db){
-	$sql = "SELECT * FROM usuarios WHERE email = '$email' AND password = '$password';";
+	$cifrado = md5($password);
+	$sql = "SELECT * FROM usuarios WHERE email = '$email' AND password = '$cifrado';";
 	$query = $db->query($sql);
 	$result = array(
 		'status' => 'error',
@@ -116,19 +118,17 @@ $app->post('/usuarios', function() use ($app, $db){
 	if(!isset($data['apellido2'])){
 		$data['apellido2']=null;
 	}
-/*	$data['alias']=null;
-	$data['email']=null;
-	$data['password']=null;*/
-	$data['rol_publicador']=false;
+	$data['admin']=false;
+	$cifrado = md5($data['password']);
 
-	$query = "INSERT INTO usuarios (id, nombre, apellido1, apellido2, alias, email, password, rol_publicador) 
+	$query = "INSERT INTO usuarios (id, nombre, apellido1, apellido2, alias, email, password, admin) 
 		VALUES (null,
 				'{$data['nombre']}',
 				'{$data['apellido1']}',
 				'{$data['apellido2']}',
 				'{$data['alias']}',
 				'{$data['email']}',
-				'{$data['password']}',
+				'$cifrado',
 				0);";
 	$insert = $db->query($query);
 	
