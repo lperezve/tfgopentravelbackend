@@ -49,6 +49,30 @@ $app->get('/restaurantes', function() use ($app, $db){
 
 });
 
+//LISTAR LOS RESTAURANTES DE MEJOR A PEOR VALORADOS
+$app->get('/valorados', function() use ($app, $db){
+	$sql = "SELECT r.*, AVG(op.puntuacion) AS media FROM restaurantes r JOIN opiniones_restaurantes op ON (r.id = op.id_restaurante) GROUP BY r.id ORDER BY media ASC";
+	$query = $db->query($sql);
+	while ($restauranteVal = ($query->fetch_assoc())) {
+		$restaurantesVal[] = $restauranteVal;
+	}
+	if (empty($restaurantesVal)){
+		$result = array(
+			'status' => 'error',
+			'code' => 404,
+			'message' => 'No hay restaurantes para mostrar'
+		);
+	} else {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			//con esto al devolver la variable result, devolvemos tb el array de objetos ($restaurantes)
+			'data' => $restaurantesVal
+		);
+	}
+	echo json_encode($result);
+});
+
 //LISTAR UN RESTAURANTE (ID)
 $app->get('/restaurantes/:id', function($id) use ($app, $db){
 	$sql = 'SELECT * FROM restaurantes WHERE id = '.$id.';';

@@ -176,6 +176,7 @@ $app->get('/delete-usuarios/:id', function($id) use ($app, $db){
 $app->post('/update-usuarios/:id', function($id) use ($app, $db){
 	$json = $app->request->post('json');
 	$data = json_decode($json, true);
+	$cifrado = md5($data['password']);
 
 	$sql = "UPDATE usuarios SET ".
 			"nombre = '{$data["nombre"]}', ".
@@ -183,7 +184,7 @@ $app->post('/update-usuarios/:id', function($id) use ($app, $db){
 			"apellido2 = '{$data["apellido2"]}', ".
 			"alias = '{$data["alias"]}', ".
 			"email = '{$data["email"]}', ".
-			"password = '{$data["password"]}' ".
+			"password = '$cifrado' ".
 			"WHERE id = {$id};";
 	$query = $db->query($sql);
 
