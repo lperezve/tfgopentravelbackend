@@ -148,5 +148,29 @@ $app->get('/opiniones-recientes', function() use ($app, $db){
 	echo json_encode($result);
 });
 
+$app->get('/opiniones-usuario/:id', function($id) use ($app, $db){	
+	$sql = 'SELECT r.nombre, op.puntuacion, op.fecha, op.mensaje FROM opiniones_restaurantes op JOIN restaurantes r ON (op.id_restaurante = r.id) WHERE op.id_usuario = '.$id.';';
+	$query = $db->query($sql);
+
+	while ($opinionUsuario = ($query->fetch_assoc())) {
+		$opinionesUsuario[] = $opinionUsuario;
+	}
+
+	if (empty($opinionesUsuario)){
+		$result = array(
+			'status' => 'error',
+			'code' => 404,
+			'message' => 'No hay opiniones'
+		);
+	} else {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'data' => $opinionesUsuario
+		);
+	}
+	echo json_encode($result);
+});
+
 
 $app->run();

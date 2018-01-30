@@ -203,8 +203,29 @@ $app->post('/update-usuarios/:id', function($id) use ($app, $db){
 	echo json_encode($result);
 });
 
+/* OBTENER LOS ATRIBUTOS DE LA TABLA USUARIOS*/
+$app->get('/atributos', function() use ($app, $db) {
+	$sql = 'DESCRIBE usuarios';
+	$query = $db->query($sql);
+	while($row = $query->fetch_assoc()){
+		$campos[] = $row['Field'];
+	}
 
-
+	if (empty($campos)){
+		$result = array(
+			'status' => 'error',
+			'code' => 404,
+			'message' => 'Error al recuperar los atributos de usuarios'
+		);
+	} else {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'data' => $campos
+		);
+	}
+	echo json_encode($result);
+});
 
 
 $app->run();

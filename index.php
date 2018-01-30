@@ -203,6 +203,12 @@ $app->post('/up-csv/:filename/:sep', function($filename, $sep) use ($app, $db) {
 	$json = $app->request->post('json');
 	$data = json_decode($json, true); //aquí tengo el objeto restaurante con los campos que debo coger del fichero csv
 	
+	$result = array(
+		'status' 	=> 'error',
+		'code'		=> 404,
+		'message' 	=> 'No ha sido posible la inserción',
+	);
+
 	/* 1. Tengo que obtener el fichero csv */
 	$directory = "uploads/datasets/csv";
 	$dirint = dir($directory);
