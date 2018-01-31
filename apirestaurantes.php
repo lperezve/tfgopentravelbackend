@@ -73,6 +73,39 @@ $app->get('/valorados', function() use ($app, $db){
 	echo json_encode($result);
 });
 
+//COMPROBAR SI EL RESTAURANTE TIENE DUEÑO, Y EN ESE CASO OBTENER EL DUEÑO
+$app->get('/tiene-propietario/:id', function($id) use ($app, $db){
+	$sql = 'SELECT u.nombre, u.apellido1, u.apellido2, u.email
+			FROM usuarios u JOIN propiedades p ON (u.id = p.id_usuario) JOIN restaurantes r ON (r.id = p.id_restaurante)
+			WHERE p.validado = 1 AND id_restaurante = '.$id.';';
+		$query = $db->query($sql);
+		$result = array(
+			'status' => 'error',
+			'code' => 404,
+			'message' => 'restaurante no encontrado'
+		);
+		if ($query->num_rows == 1) {
+		//conseguimos el producto de la base de datos
+			$propietario = $query->fetch_assoc();
+			$sihay = true;
+			$result = array(
+				'status' => 'success',
+				'code' => 200,
+				'data' => $propietario,
+				'bandera' => $sihay
+			);
+		}
+		else {
+			$sihay = false;
+			$result = array(
+				'status' => 'success',
+				'code' => 200,
+				'bandera' => $sihay
+			);
+		}
+		echo json_encode($result);
+});
+
 //LISTAR UN RESTAURANTE (ID)
 $app->get('/restaurantes/:id', function($id) use ($app, $db){
 	$sql = 'SELECT * FROM restaurantes WHERE id = '.$id.';';
