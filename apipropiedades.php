@@ -68,6 +68,7 @@ $app->get('/peticiones', function() use ($app, $db){
 
 });
 
+/* VALIDAR UNA PETICIÓN, ES DECIR, PONER EL CAMPO "VALIDADO" A 1*/
 $app->get('/validar/:id', function($id) use ($app, $db){
 	$sql = 'UPDATE propiedades 
 			SET validado = 1 
@@ -91,6 +92,7 @@ $app->get('/validar/:id', function($id) use ($app, $db){
 	echo json_encode($result);
 });
 
+/* DENEGAR UNA PETICIÓN, ES DECIR, BORRARLA */
 $app->get('/denegar/:id', function($id) use ($app, $db){
 	$sql = 'DELETE 
 			FROM propiedades 
@@ -114,7 +116,6 @@ $app->get('/denegar/:id', function($id) use ($app, $db){
 
 	echo json_encode($result);
 });
-
 
 $app->run();
 ?>

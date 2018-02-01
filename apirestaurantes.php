@@ -49,6 +49,60 @@ $app->get('/restaurantes', function() use ($app, $db){
 
 });
 
+//LISTAR TODOS LOS RESTAURANTES Y PARA AQUELLOS QUE TENGAN DUEÑO, LISTAR SU DUEÑO TAMBIÉN
+$app->get('/restaurantes-propietario', function() use ($app, $db){
+	$sql = 'SELECT r.*, p.id_usuario, p.validado
+			FROM restaurantes r LEFT JOIN propiedades p ON (r.id = p.id_restaurante)
+			ORDER BY id DESC;';
+	$query = $db->query($sql);
+	while ($restauranteProp = ($query->fetch_assoc())) {
+		$restaurantesProp[] = $restauranteProp;
+	}
+
+	if (empty($restaurantesProp)){
+		$result = array(
+			'status' => 'error',
+			'code' => 404,
+			'message' => 'No hay restaurantes para mostrar'
+		);
+	} else {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'data' => $restaurantesProp
+		);
+	}
+	echo json_encode($result);
+
+});
+
+//OBTENER LOS RESTAURANTES DEL QUE ES DUEÑO EL USUARIO PASADO POR PARÁMETRO
+$app->get('/restaurantes-usuario/:id', function($id) use ($app, $db){
+	$sql = 'SELECT r.*
+			FROM restaurantes r JOIN propiedades p ON (r.id = p.id_restaurante) JOIN usuarios u ON (p.id_usuario = u.id)
+			WHERE u.id = '.$id.' AND p.validado = 1
+			ORDER BY p.id DESC';
+	$query = $db->query($sql);
+	while ($restauranteUsuario = ($query->fetch_assoc())) {
+		$restaurantesUsuario[] = $restauranteUsuario;
+	}
+
+	if (empty($restaurantesUsuario)){
+		$result = array(
+			'status' => 'error',
+			'code' => 404,
+			'message' => 'No hay restaurantes para mostrar'
+		);
+	} else {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'data' => $restaurantesUsuario
+		);
+	}
+	echo json_encode($result);
+});
+
 //LISTAR LOS RESTAURANTES DE MEJOR A PEOR VALORADOS
 $app->get('/valorados', function() use ($app, $db){
 	$sql = "SELECT r.*, AVG(op.puntuacion) AS media FROM restaurantes r JOIN opiniones_restaurantes op ON (r.id = op.id_restaurante) GROUP BY r.id ORDER BY media ASC";
@@ -75,7 +129,7 @@ $app->get('/valorados', function() use ($app, $db){
 
 //COMPROBAR SI EL RESTAURANTE TIENE DUEÑO, Y EN ESE CASO OBTENER EL DUEÑO
 $app->get('/tiene-propietario/:id', function($id) use ($app, $db){
-	$sql = 'SELECT u.nombre, u.apellido1, u.apellido2, u.email
+	$sql = 'SELECT u.id, u.nombre, u.apellido1, u.apellido2, u.email
 			FROM usuarios u JOIN propiedades p ON (u.id = p.id_usuario) JOIN restaurantes r ON (r.id = p.id_restaurante)
 			WHERE p.validado = 1 AND id_restaurante = '.$id.';';
 		$query = $db->query($sql);
