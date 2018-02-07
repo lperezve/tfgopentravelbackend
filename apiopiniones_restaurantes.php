@@ -172,5 +172,6 @@ $app->get('/opiniones-usuario/:id', function($id) use ($app, $db){
 	echo json_encode($result);
 });
 
-
 $app->run();
+
+?>

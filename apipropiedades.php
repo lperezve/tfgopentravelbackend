@@ -65,7 +65,6 @@ $app->get('/peticiones', function() use ($app, $db){
 		);
 	}
 	echo json_encode($result);
-
 });
 
 /* VALIDAR UNA PETICIÓN, ES DECIR, PONER EL CAMPO "VALIDADO" A 1*/
@@ -114,6 +113,34 @@ $app->get('/denegar/:id', function($id) use ($app, $db){
 		);
 	}
 
+	echo json_encode($result);
+});
+
+$app->get('/hay-peticion/:id_usuario/:id_restaurante', function($id_usuario, $id_restaurante) use ($app, $db){
+	//$hayPeticion = false;
+	$sql = 'SELECT * 
+			FROM propiedades 
+			WHERE id_usuario = '.$id_usuario.' AND id_restaurante = '.$id_restaurante.' AND validado = 0;';
+	$query = $db->query($sql);
+
+	if ($query->num_rows == 1) {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'message' => 'Ya hay una petición realizada',
+			'hayPeticion' => true
+		);
+		
+	}
+	else {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'message' => 'No hay petición realizada',
+			'hayPeticion' => false
+		);
+		
+	}
 	echo json_encode($result);
 });
 

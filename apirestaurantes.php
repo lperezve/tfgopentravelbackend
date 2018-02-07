@@ -46,7 +46,6 @@ $app->get('/restaurantes', function() use ($app, $db){
 		);
 	}
 	echo json_encode($result);
-
 });
 
 //LISTAR TODOS LOS RESTAURANTES Y PARA AQUELLOS QUE TENGAN DUEÑO, LISTAR SU DUEÑO TAMBIÉN
@@ -426,13 +425,5 @@ $app->post('/upload-datarest', function() use ($app, $db){
 	echo json_encode($result);
 });
 
-$app->get('/python', function() use ($app) {
-	$salida = array();
-	$filename = 'probando.py';
-	//exec("python scripts/probando.py");
-	exec("python scripts/probando.py", $salida);
-	print_r ($salida);
-});
-
-
 $app->run();
+?>

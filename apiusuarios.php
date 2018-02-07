@@ -135,7 +135,8 @@ $app->post('/usuarios', function() use ($app, $db){
 	$result = array(
 		'status' => 'error',
 		'code' => 404,
-		'message' => 'Usuario no creado'
+		'message' => 'Usuario no creado',
+		'query' => $query
 	);
 		
 	if ($insert){
@@ -230,3 +231,4 @@ $app->get('/atributos', function() use ($app, $db) {
 
 
 $app->run();
+?>
