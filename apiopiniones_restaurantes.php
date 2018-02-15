@@ -55,13 +55,17 @@ $app->post('/opinion', function() use ($app, $db){
 	if(!isset($data['mensaje'])){
 		$data['mensaje']=null;
 	}
+	if(!isset($data['imagen'])){
+		$data['imagen']=null;
+	}
 
 	$id_restaurante = $data['id_restaurante'];
 	$id_usuario = $data['id_usuario'];
 	$puntuacion = $data['puntuacion'];
 	$mensaje = $data['mensaje'];
+	$imagen = $data['imagen'];
 
-	$query = "INSERT INTO opiniones_restaurantes (id, id_restaurante, id_usuario, puntuacion, mensaje) VALUES (null, $id_restaurante, $id_usuario, $puntuacion, '$mensaje')";
+	$query = "INSERT INTO opiniones_restaurantes (id, id_restaurante, id_usuario, puntuacion, mensaje, imagen) VALUES (null, $id_restaurante, $id_usuario, $puntuacion, '$mensaje', '$imagen')";
 
 	$insert = $db->query($query);
 	$result = array(
@@ -149,7 +153,7 @@ $app->get('/opiniones-recientes', function() use ($app, $db){
 });
 
 $app->get('/opiniones-usuario/:id', function($id) use ($app, $db){	
-	$sql = 'SELECT r.nombre, op.puntuacion, op.fecha, op.mensaje FROM opiniones_restaurantes op JOIN restaurantes r ON (op.id_restaurante = r.id) WHERE op.id_usuario = '.$id.';';
+	$sql = 'SELECT r.nombre, op.id, op.puntuacion, op.fecha, op.mensaje, op.imagen FROM opiniones_restaurantes op JOIN restaurantes r ON (op.id_restaurante = r.id) WHERE op.id_usuario = '.$id.';';
 	$query = $db->query($sql);
 
 	while ($opinionUsuario = ($query->fetch_assoc())) {
@@ -170,6 +174,97 @@ $app->get('/opiniones-usuario/:id', function($id) use ($app, $db){
 		);
 	}
 	echo json_encode($result);
+});
+
+//método para subir imagenes en los comentarios
+$app->post('/upload-images', function() use ($db, $app){
+	//resultado no valido, para que sea el que se va a devolver por defecto
+	$result = array(
+		'status' => 'error',
+		'code' => 404,
+		'message' => 'La imagen no ha podido subirse'
+	);
+
+	if(isset($_FILES['uploads'])){
+		$piramideUploader = new PiramideUploader();
+		//upload('prefijo que lleva el nombre', 'el nombre que nos llega por $_FILES', 'directorio donde se va a guardar', 'tipo de ficheros permitidos')
+		//con esto ya se está subiendo la imagen
+		$upload = $piramideUploader->upload('image', "uploads", "uploads/images_comment", array('image/jpeg', 'image/png', 'image/gif'));
+		//conseguir todos los datos del fichero que acabamos de subir
+		$file = $piramideUploader->getInfoFile();
+		$file_name = $file['complete_name'];
+
+		if (isset($upload) && $upload["uploaded"] == false){
+			$result = array(
+				'status' => 'error',
+				'code' => 404,
+				'message' => 'Error en la carga del archivo'
+			);
+		}
+		else {
+			$result = array(
+				'status' => 'success',
+				'code' => 404,
+				'message' => 'Hay imagen',
+				'filename' => $file_name
+			);
+		}
+	}
+	echo json_encode($result);
+});
+
+//borrar una opinión
+$app->get('/delete-opinion/:id', function($id) use ($app, $db){
+	$sql = 'DELETE FROM opiniones_restaurantes WHERE id = '.$id.';';
+	$query = $db->query($sql);
+
+	if ($query){
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'message' => 'Opinion '.$id.' borrado'
+		);
+	} else {
+		$result = array(
+		'status' => 'error',
+		'code' => 404,
+		'message' => 'Opinion'.$id.' no eliminado'
+		);
+	}
+	echo json_encode($result);
+});
+
+//actualizar una opinión
+$app->post('/update-opinion/:id', function($id) use ($app, $db) {
+	$json = $app->request->post('json');
+	$data = json_decode($json, true);
+
+	$sql = "UPDATE opiniones_restaurantes SET ".
+			"id_restaurante = '{$data["id_restaurante"]}', ".
+			"id_usuario = '{$data["id_usuario"]}', ".
+			"puntuacion = '{$data["puntuacion"]}', ".
+			"mensaje = '{$data["mensaje"]}', ".
+			"imagen = '{$data["imagen"]}' ".
+			"WHERE id = {$id};";
+
+	$query = $db->query($sql);
+	if ($query) {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'message' => 'Opinion '.$id.' actualizada',
+			'sql'	=> $sql
+		);
+	} else {
+		$result = array(
+			'status' => 'error',
+			'code' => 404,
+			'message' => 'Opinion'.$id.' no actualizada',
+			'sql'	=> $sql
+		);
+	}
+	echo json_encode($result);
+
 });
 
 $app->run();
