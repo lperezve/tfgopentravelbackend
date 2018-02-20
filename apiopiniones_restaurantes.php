@@ -129,7 +129,7 @@ $app->get('/opinion/:id', function($id) use ($app, $db) {
 
 /* OBTENER LAS OPINIONES SEGÚN LA FECHA: DE LA MÁS RECIENTE A LA MÁS ANTIGUA */
 $app->get('/opiniones-recientes', function() use ($app, $db){
-	$sql = 'SELECT * FROM opiniones_restaurantes ORDER BY fecha DESC';
+	$sql = 'SELECT * FROM opiniones_restaurantes ORDER BY fecha DESC LIMIT 10';
 	$query = $db->query($sql);
 
 	while ($opinionFecha = ($query->fetch_assoc())) {
@@ -265,6 +265,31 @@ $app->post('/update-opinion/:id', function($id) use ($app, $db) {
 	}
 	echo json_encode($result);
 
+});
+
+/* DEVOLVER LAS MEJORES OPINIONES (LAS QUE TIENEN MAYOR PUNTUACIÓN) */
+$app->get('/mejores-opiniones', function() use ($app, $db){
+	$sql = 'SELECT op.*, r.nombre FROM opiniones_restaurantes op JOIN restaurantes r ON (op.id_restaurante = r.id) WHERE op.imagen != "" ORDER BY op.puntuacion DESC LIMIT 5;';
+	$query = $db->query($sql);
+
+	while ($mejorOp = ($query->fetch_assoc())) {
+		$mejorOps[] = $mejorOp;
+	}
+
+	if (empty($mejorOps)){
+		$result = array(
+			'status' => 'error',
+			'code' => 404,
+			'message' => 'No hay opiniones'
+		);
+	} else {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'data' => $mejorOps
+		);
+	}
+	echo json_encode($result);
 });
 
 $app->run();

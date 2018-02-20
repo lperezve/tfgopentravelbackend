@@ -92,7 +92,7 @@ $app->post('/upload-dataset', function() use($db, $app){
 			$correcto = true;
 			$upload = $piramideUploader->uploadDataset('dataset', "uploads", "uploads/datasets/csv");
 		}
-		elseif ($extension == 'json') {
+		elseif (($extension == 'json') || ($extension == "geojson")) {
 			$result = array(
 				'message' 	=> 'json'
 			);
@@ -141,60 +141,66 @@ $app->get('/csv-fields/:nombre/:sep', function($nombre, $sep) use($app){
 	$extension = $namefichero[sizeof($namefichero)-1];
 	if ($extension == "csv"){
 		$directory = "uploads/datasets/csv";
-	}
-	elseif($extension == "json"){
-		$directory = "uploads/datasets/json";
-	}	
-	$dirint = dir($directory);
-	$fields = array();
-    $fila = 1;
+		
+		$dirint = dir($directory);
+		$fields = array();
+	    $fila = 1;
 
-	while (($archivo = $dirint->read()) !== false) {
-        if ($archivo == $nombre){
-        	if ($extension == "csv"){
-	        	$csv = file_get_contents("./uploads/datasets/csv/$nombre");
-	        	if (($gestor = fopen("./uploads/datasets/csv/$nombre", "r")) !== FALSE) {
-			        while ((($datos = fgetcsv($gestor, 1000, $sep)) !== FALSE) && ($fila <=2)) {
-			            $fila++;
-			            if ($fila <=2){
-			                $fields = $datos;
-			            }
+		while (($archivo = $dirint->read()) !== false) {
+	        if ($archivo == $nombre){
+	        	if ($extension == "csv"){
+		        	$csv = file_get_contents("./uploads/datasets/csv/$nombre");
+		        	if (($gestor = fopen("./uploads/datasets/csv/$nombre", "r")) !== FALSE) {
+				        while ((($datos = fgetcsv($gestor, 1000, $sep)) !== FALSE) && ($fila <=2)) {
+				            $fila++;
+				            if ($fila <=2){
+				                $fields = $datos;
+				            }
+				        }
+				    }
+			        fclose($gestor);
+			        if (count($fields) <=1){
+			        	$result = array(
+						'status' 	=> 'error',
+						'code'		=> 404,
+						'message' 		=> "El carácter de separación es incorrecto"
+						);
 			        }
+			        else {
+				        $result = array(
+							'status' 	=> 'success',
+							'code'		=> 200,
+							'data' 		=> $fields
+						);
+			    	}
 			    }
-		        fclose($gestor);
-		        if (count($fields) <=1){
-		        	$result = array(
+			    else {
+			    	//hacerlo para --> json <--
+			    	$result = array(
+						'message' 	=> 'implementar para json',
+					);
+			    }
+			} else {
+				$result = array(
 					'status' 	=> 'error',
 					'code'		=> 404,
-					'message' 		=> "El carácter de separación es incorrecto"
-					);
-		        }
-		        else {
-			        $result = array(
-						'status' 	=> 'success',
-						'code'		=> 200,
-						'data' 		=> $fields
-					);
-		    	}
-		    }
-		    else {
-		    	//hacerlo para --> json <--
-		    	$result = array(
-					'message' 	=> 'implementar para json',
+					'message' 	=> 'El archivo no existe',
+					'extension' => $extension,
+					'archivo'	=> $archivo,
+					'nombre'	=> $nombre
 				);
-		    }
-		} else {
-			$result = array(
-				'status' 	=> 'error',
-				'code'		=> 404,
-				'message' 	=> 'El archivo no existe',
-				'extension' => $extension,
-				'archivo'	=> $archivo,
-				'nombre'	=> $nombre
-			);
-		}
-    }
-    $dirint->close();
+			}
+	    }
+	    $dirint->close();
+	}
+	elseif($extension == "json"){
+		$result = array(
+			'status' 	=> 'error',
+			'code'		=> 404,
+			'message' 	=> 'La extensión no es correcta',
+		);
+	}
+
     echo json_encode($result);
 });
 
@@ -288,91 +294,105 @@ $app->post('/up-csv/:filename/:sep', function($filename, $sep) use ($app, $db) {
 		            'count($array[0])' => count($array[0]),
 					'separacion' => $sep
 		        );
+		        // 4. Una vez tengo todos los datos, tengo que hacer un for que recorra tantas veces como elementos tenga en info 
+			    $sql = 'DESCRIBE restaurantes';
+				$query = $db->query($sql);
+				while($row = $query->fetch_assoc()){
+					$campos[] = $row['Field'];
+				}
+		        
+
+			    $encFields = false;
+			    $item = 0;
+			    // Por cada elemento de array, tengo que recorrer los atributos de la bd
+			    for ($a = 0; $a<count($array); $a++){
+			    	//----- EMPIEZA LA CONSULTA PARA INSERTAR -------
+					$queryIns = "INSERT INTO restaurantes VALUES(NULL, ";
+			    	$longInfoItem = count($array[$a]);
+			    	// por cada atributo de la bd, tengo que comprobar que esté en data(key), y, si está, sacar el data(value)
+			    	$longCampos = count($campos);
+			    	for ($c=1; $c<$longCampos; $c++) {
+			    		$nameAtr = $campos[$c];
+			    		$nameData = $data[strval($campos[$c])];
+			    		if(empty(!$nameData)){
+			    			$d = 0;
+		    				$longFields = count($fields);
+		    				$encFields = false;
+		    				while (($d < $longFields) && ($encFields==false)){
+								if ($nameData == $fields[$d]){
+									$item = $d;
+									$encFields = true;
+									$nameFields = $fields[$d];
+
+									$jsonArray[$c]=$array[$a][$item];
+									// en jsonArray[c] tenemos cada elemento que hay que meter en la tupla de la bd 
+									$valor = strval($array[$a][$item]);
+									$queryIns .="'".$valor."'";
+
+								}
+								else $d++;	
+		    				}		
+			    		}
+			    		else {
+			    			$queryIns .="NULL";
+			    		}
+			    		if ($c!=$longCampos-1)
+			    			$queryIns .=", ";
+			    	}
+			    	//INSERTAR LA TUPLA EN LA BD //
+			    	//aqui tenemos el array con todos los atributos para insertar en la tupla, en jsonArray
+			    	$queryIns .=");";
+			    	$insert = $db->query($queryIns);
+			    	if ($insert){
+			    		$insertado = true;
+			    		$result = array(
+							'status' 	=> 'success',
+							'code'		=> 200,
+							'message' => 'Se ha insertado correctamente'
+						);
+			    	}
+			    	else {
+			    		$result = array(
+							'status' 	=> 'error',
+							'code'		=> 404,
+							'message' => 'Error en la inserción',
+							'queryIns'	=> $queryIns,
+						);
+			    	}
+				} 
+			    /*$result = array(
+					'status' 	=> 'success',
+					'code'		=> 200,
+					'campos'	=> $campos,
+					'sql'		=> $sql,
+					//'longCampos' => $longCampos,
+					//'nameData' => $nameData,
+					//'nameAtr' 	=> $nameAtr,
+					//'longFields' => $longFields,
+					//'fields'	=> $fields,
+					//'nameFields' => $nameFields,
+					//'jsonArray'	=> $jsonArray,
+					//'item'		=> $item,
+					//'a'			=> $a,
+					//'info'		=> $info,
+					//'data'		=> $data,
+					//'longInfoItem' => $longInfoItem,
+					'insertado' => $insertado,
+					//'valor'		=> $valor,
+					'queryIns'	=> $queryIns,
+					//'separacion' => $sep
+				);*/
 		    }
 		    else {
 		         $result = array (
 		            'status' => 'error',
 		            'code' => 404,
-		            'message' => 'El archivo csv no está bien formado',
-		            'count($fields)' => count($fields),
-		            'count($array[0])' => count($array[0]),
-					'separacion' => $sep
+		            'message' => 'No es posible la insercción, el archivo csv no está bien formado, el número de claves es distinto al número de datos a insertar.',
+		            //'count($fields)' => count($fields),
+		            //'count($array[0])' => count($array[0]),
+					//'separacion' => $sep
 		        );
 		    }
-
-		    // 4. Una vez tengo todos los datos, tengo que hacer un for que recorra tantas veces como elementos tenga en info 
-		    $sql = 'DESCRIBE restaurantes';
-			$query = $db->query($sql);
-			while($row = $query->fetch_assoc()){
-				$campos[] = $row['Field'];
-			}
-
-		    $encFields = false;
-		    $item = 0;
-		    // Por cada elemento de array, tengo que recorrer los atributos de la bd
-		    for ($a = 0; $a<count($array)-1; $a++){
-		    	//----- EMPIEZA LA CONSULTA PARA INSERTAR -------
-				$queryIns = "INSERT INTO restaurantes VALUES(NULL, ";
-		    	$longInfoItem = count($array[$a]);
-		    	// por cada atributo de la bd, tengo que comprobar que esté en data(key), y, si está, sacar el data(value)
-		    	$longCampos = count($campos);
-		    	for ($c=1; $c<$longCampos; $c++) {
-		    		$nameAtr = $campos[$c];
-		    		$nameData = $data[strval($campos[$c])];
-		    		if(empty(!$nameData)){
-		    			$d = 0;
-	    				$longFields = count($fields);
-	    				$encFields = false;
-	    				while (($d < $longFields) && ($encFields==false)){
-							if ($nameData == $fields[$d]){
-								$item = $d;
-								$encFields = true;
-								$nameFields = $fields[$d];
-
-								$jsonArray[$c]=$array[$a][$item];
-								// en jsonArray[c] tenemos cada elemento que hay que meter en la tupla de la bd 
-								$valor = strval($array[$a][$item]);
-								$queryIns .="'".$valor."'";
-
-							}
-							else $d++;	
-	    				}		
-		    		}
-		    		else {
-		    			$queryIns .="NULL";
-		    		}
-		    		if ($c!=$longCampos-1)
-		    			$queryIns .=", ";
-		    	}
-		    	//INSERTAR LA TUPLA EN LA BD //
-		    	//aqui tenemos el array con todos los atributos para insertar en la tupla, en jsonArray
-		    	$queryIns .=");";
-		    	$insert = $db->query($queryIns);
-		    	if ($insert){
-		    		$insertado = true;
-		    	}
-			} 
-		    $result = array(
-				'status' 	=> 'success',
-				'code'		=> 200,
-				'campos'	=> $campos,
-				'longCampos' => $longCampos,
-				'nameData' => $nameData,
-				'nameAtr' 	=> $nameAtr,
-				'longFields' => $longFields,
-				'fields'	=> $fields,
-				'nameFields' => $nameFields,
-				'jsonArray'	=> $jsonArray,
-				'item'		=> $item,
-				'a'			=> $a,
-				'info'		=> $info,
-				'data'		=> $data,
-				'longInfoItem' => $longInfoItem,
-				'insertado' => $insertado,
-				'valor'		=> $valor,
-				'queryIns'	=> $queryIns,
-				'separacion' => $sep
-			);
 		} else {
 			$result = array(
 				'status' 	=> 'error',
@@ -401,25 +421,26 @@ $app->get('/json-fields/:nombre', function($nombre) use($app){
 			'code'		=> 404,
 			'data' 		=> "no va bien"
 	);
-	if($extension == "json"){
+	if(($extension == "json") || ($extension == "geojson")){
 		$data = file_get_contents("uploads/datasets/json/".$nombre);
 		$file = json_decode($data, true);
+	
+		recorrido($file, "");
+		if (!empty($conjunto)){
+			$result = array(
+				'status' 	=> 'success',
+				'code'		=> 200,
+				'data' 		=> $conjunto
+			);
+			$conjunto = array();
+		}
 	}
 	else {
 		$result = array(
 			'status' 	=> 'error',
 			'code'		=> 404,
-			'data' 		=> "La extensión no es correcta"
+			'message' 		=> "La extensión no es correcta"
 		);
-	}
-	recorrido($file, "");
-	if (!empty($conjunto)){
-		$result = array(
-			'status' 	=> 'success',
-			'code'		=> 200,
-			'data' 		=> $conjunto
-		);
-		$conjunto = array();
 	}
 	echo json_encode($result);
 });

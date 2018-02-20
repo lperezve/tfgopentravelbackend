@@ -75,12 +75,40 @@ $app->get('/restaurantes-propietario', function() use ($app, $db){
 
 });
 
+/* 
+*/
+
+$app->get('/restaurantes-propietario-avg', function() use ($app, $db){
+	$sql = 'SELECT r.*, p.id_usuario, p.validado, ROUND(AVG(op.puntuacion),0) as media FROM opiniones_restaurantes op RIGHT JOIN restaurantes r ON (op.id_restaurante = r.id) LEFT JOIN propiedades p ON (r.id = p.id_restaurante) GROUP BY r.id ORDER BY r.id DESC;';
+	$query = $db->query($sql);
+	while ($restPropAvg = ($query->fetch_assoc())) {
+		$restPropAvgs[] = $restPropAvg;
+	}
+
+	if (empty($restPropAvgs)){
+		$result = array(
+			'status' => 'error',
+			'code' => 404,
+			'message' => 'No hay restaurantes para mostrar'
+		);
+	} else {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'data' => $restPropAvgs
+		);
+	}
+	echo json_encode($result);
+
+});
+
 //OBTENER LOS RESTAURANTES DEL QUE ES DUEÑO EL USUARIO PASADO POR PARÁMETRO
 $app->get('/restaurantes-usuario/:id', function($id) use ($app, $db){
-	$sql = 'SELECT r.*
-			FROM restaurantes r JOIN propiedades p ON (r.id = p.id_restaurante) JOIN usuarios u ON (p.id_usuario = u.id)
+	$sql = 'SELECT r.*, ROUND(AVG(op.puntuacion),0) as media
+			FROM restaurantes r JOIN propiedades p ON (r.id = p.id_restaurante) JOIN usuarios u ON (p.id_usuario = u.id) LEFT JOIN opiniones_restaurantes op ON (r.id = op.id_restaurante)
 			WHERE u.id = '.$id.' AND p.validado = 1
-			ORDER BY p.id DESC';
+			GROUP BY r.id
+			ORDER BY r.id DESC';
 	$query = $db->query($sql);
 	while ($restauranteUsuario = ($query->fetch_assoc())) {
 		$restaurantesUsuario[] = $restauranteUsuario;
