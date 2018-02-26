@@ -130,9 +130,9 @@ $app->get('/restaurantes-usuario/:id', function($id) use ($app, $db){
 	echo json_encode($result);
 });
 
-//LISTAR LOS RESTAURANTES DE MEJOR A PEOR VALORADOS
+//LISTAR LOS RESTAURANTES DE MEJOR A PEOR VALORADOS DE MAYOR A MENOR
 $app->get('/valorados', function() use ($app, $db){
-	$sql = "SELECT r.*, AVG(op.puntuacion) AS media FROM restaurantes r JOIN opiniones_restaurantes op ON (r.id = op.id_restaurante) GROUP BY r.id ORDER BY media ASC";
+	$sql = "SELECT r.*, ROUND(AVG(op.puntuacion),0) AS media FROM restaurantes r LEFT JOIN opiniones_restaurantes op ON (r.id = op.id_restaurante) GROUP BY r.id ORDER BY media DESC";
 	$query = $db->query($sql);
 	while ($restauranteVal = ($query->fetch_assoc())) {
 		$restaurantesVal[] = $restauranteVal;
@@ -149,6 +149,85 @@ $app->get('/valorados', function() use ($app, $db){
 			'code' => 200,
 			//con esto al devolver la variable result, devolvemos tb el array de objetos ($restaurantes)
 			'data' => $restaurantesVal
+		);
+	}
+	echo json_encode($result);
+});
+
+//LISTAR LOS RESTAURANTES DE MEJOR A PEOR VALORADOS DE MENOR A MAYOR
+$app->get('/menos-valorados', function() use ($app, $db){
+	$sql = "SELECT r.*, ROUND(AVG(op.puntuacion),0) AS media FROM restaurantes r LEFT JOIN opiniones_restaurantes op ON (r.id = op.id_restaurante) GROUP BY r.id ORDER BY media ASC";
+	$query = $db->query($sql);
+	while ($restauranteVal = ($query->fetch_assoc())) {
+		$restaurantesVal[] = $restauranteVal;
+	}
+	if (empty($restaurantesVal)){
+		$result = array(
+			'status' => 'error',
+			'code' => 404,
+			'message' => 'No hay restaurantes para mostrar'
+		);
+	} else {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			//con esto al devolver la variable result, devolvemos tb el array de objetos ($restaurantes)
+			'data' => $restaurantesVal
+		);
+	}
+	echo json_encode($result);
+});
+
+//LISTA DE LOS RESTAURANTES ORDENADOS DE MÁS A MENOS COMENTARIOS
+$app->get('/mas-comentarios', function() use ($app, $db){
+	$sql = "SELECT r.*, COUNT(op.id) as num_opiniones
+			FROM restaurantes r LEFT JOIN opiniones_restaurantes op ON (r.id = op.id_restaurante)
+			WHERE r.id = op.id_restaurante
+			GROUP BY r.id
+			ORDER BY num_opiniones DESC;";
+	$query = $db->query($sql);
+	while ($restauranteCom = ($query->fetch_assoc())) {
+		$restaurantesCom[] = $restauranteCom;
+	}
+	if (empty($restaurantesCom)){
+		$result = array(
+			'status' => 'error',
+			'code' => 404,
+			'message' => 'No hay restaurantes para mostrar'
+		);
+	} else {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			//con esto al devolver la variable result, devolvemos tb el array de objetos ($restaurantes)
+			'data' => $restaurantesCom
+		);
+	}
+	echo json_encode($result);
+});
+//LISTA DE LOS RESTAURANTES ORDENADOS DE MENOS A MÁS COMENTARIOS
+$app->get('/menos-comentarios', function() use ($app, $db){
+	$sql = "SELECT r.*, COUNT(op.id) as num_opiniones
+			FROM restaurantes r LEFT JOIN opiniones_restaurantes op ON (r.id = op.id_restaurante)
+			WHERE r.id = op.id_restaurante
+			GROUP BY r.id
+			ORDER BY num_opiniones ASC;";
+	$query = $db->query($sql);
+	while ($restauranteCom = ($query->fetch_assoc())) {
+		$restaurantesCom[] = $restauranteCom;
+	}
+	if (empty($restaurantesCom)){
+		$result = array(
+			'status' => 'error',
+			'code' => 404,
+			'message' => 'No hay restaurantes para mostrar'
+		);
+	} else {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			//con esto al devolver la variable result, devolvemos tb el array de objetos ($restaurantes)
+			'data' => $restaurantesCom
 		);
 	}
 	echo json_encode($result);

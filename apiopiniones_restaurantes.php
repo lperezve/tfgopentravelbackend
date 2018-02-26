@@ -153,7 +153,7 @@ $app->get('/opiniones-recientes', function() use ($app, $db){
 });
 
 $app->get('/opiniones-usuario/:id', function($id) use ($app, $db){	
-	$sql = 'SELECT r.nombre, op.id, op.puntuacion, op.fecha, op.mensaje, op.imagen FROM opiniones_restaurantes op JOIN restaurantes r ON (op.id_restaurante = r.id) WHERE op.id_usuario = '.$id.';';
+	$sql = 'SELECT r.nombre, op.id, op.puntuacion, op.fecha, op.mensaje, op.imagen, op.id_restaurante FROM opiniones_restaurantes op JOIN restaurantes r ON (op.id_restaurante = r.id) WHERE op.id_usuario = '.$id.';';
 	$query = $db->query($sql);
 
 	while ($opinionUsuario = ($query->fetch_assoc())) {

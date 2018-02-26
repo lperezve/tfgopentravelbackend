@@ -445,8 +445,7 @@ $app->get('/json-fields/:nombre', function($nombre) use($app){
 	echo json_encode($result);
 });
 
-
-
+//SUBIR EL JSON PARSEADO A LA BASE DE DATOS UNA VEZ OBTENIDO EL EMPAREJAMIENTO
 $app->post('/up-json/:filename', function($filename) use ($app, $db) {
 	// VARIABLES GLOBALES QUE NECESITO EN AMBOS MÉTODOS 
 	global $elemInsertJson;
