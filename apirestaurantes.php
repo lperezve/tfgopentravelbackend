@@ -21,7 +21,7 @@ if($method == "OPTIONS") {
 //LISTAR TODOS LOS RESTAURANTES
 $app->get('/restaurantes', function() use ($app, $db){
 	//hacemos una consulta sql para sacar todos los restaurantes de la BD
-	$sql = 'SELECT * FROM restaurantes ORDER BY id DESC;';
+	$sql = 'SELECT * FROM restaurantes WHERE validado = 1 ORDER BY id DESC;';
 	//ejecutamos la consulta en la base de datos
 	$query = $db->query($sql);
 	//fetch all saca todos los restaurantes sin necesidad de tener que hacer un bucle para recorrer los elementos
@@ -52,7 +52,8 @@ $app->get('/restaurantes', function() use ($app, $db){
 $app->get('/restaurantes-propietario', function() use ($app, $db){
 	$sql = 'SELECT r.*, p.id_usuario, p.validado
 			FROM restaurantes r LEFT JOIN propiedades p ON (r.id = p.id_restaurante)
-			ORDER BY id DESC;';
+			 WHERE r.validado = 1
+			 ORDER BY id DESC;';
 	$query = $db->query($sql);
 	while ($restauranteProp = ($query->fetch_assoc())) {
 		$restaurantesProp[] = $restauranteProp;
@@ -79,7 +80,7 @@ $app->get('/restaurantes-propietario', function() use ($app, $db){
 */
 
 $app->get('/restaurantes-propietario-avg', function() use ($app, $db){
-	$sql = 'SELECT r.*, p.id_usuario, p.validado, ROUND(AVG(op.puntuacion),0) as media FROM opiniones_restaurantes op RIGHT JOIN restaurantes r ON (op.id_restaurante = r.id) LEFT JOIN propiedades p ON (r.id = p.id_restaurante) GROUP BY r.id ORDER BY r.id DESC;';
+	$sql = 'SELECT r.*, p.id_usuario, p.validado, ROUND(AVG(op.puntuacion),0) as media FROM opiniones_restaurantes op RIGHT JOIN restaurantes r ON (op.id_restaurante = r.id) LEFT JOIN propiedades p ON (r.id = p.id_restaurante) WHERE r.validado = 1 GROUP BY r.id ORDER BY r.id DESC;';
 	$query = $db->query($sql);
 	while ($restPropAvg = ($query->fetch_assoc())) {
 		$restPropAvgs[] = $restPropAvg;
@@ -132,7 +133,7 @@ $app->get('/restaurantes-usuario/:id', function($id) use ($app, $db){
 
 //LISTAR LOS RESTAURANTES DE MEJOR A PEOR VALORADOS DE MAYOR A MENOR
 $app->get('/valorados', function() use ($app, $db){
-	$sql = "SELECT r.*, ROUND(AVG(op.puntuacion),0) AS media FROM restaurantes r LEFT JOIN opiniones_restaurantes op ON (r.id = op.id_restaurante) GROUP BY r.id ORDER BY media DESC";
+	$sql = "SELECT r.*, ROUND(AVG(op.puntuacion),0) AS media FROM restaurantes r LEFT JOIN opiniones_restaurantes op ON (r.id = op.id_restaurante) WHERE r.validado = 1 GROUP BY r.id ORDER BY media DESC";
 	$query = $db->query($sql);
 	while ($restauranteVal = ($query->fetch_assoc())) {
 		$restaurantesVal[] = $restauranteVal;
@@ -156,7 +157,7 @@ $app->get('/valorados', function() use ($app, $db){
 
 //LISTAR LOS RESTAURANTES DE MEJOR A PEOR VALORADOS DE MENOR A MAYOR
 $app->get('/menos-valorados', function() use ($app, $db){
-	$sql = "SELECT r.*, ROUND(AVG(op.puntuacion),0) AS media FROM restaurantes r LEFT JOIN opiniones_restaurantes op ON (r.id = op.id_restaurante) GROUP BY r.id ORDER BY media ASC";
+	$sql = "SELECT r.*, ROUND(AVG(op.puntuacion),0) AS media FROM restaurantes r LEFT JOIN opiniones_restaurantes op ON (r.id = op.id_restaurante) WHERE r.validado = 1 GROUP BY r.id ORDER BY media ASC";
 	$query = $db->query($sql);
 	while ($restauranteVal = ($query->fetch_assoc())) {
 		$restaurantesVal[] = $restauranteVal;
@@ -182,7 +183,7 @@ $app->get('/menos-valorados', function() use ($app, $db){
 $app->get('/mas-comentarios', function() use ($app, $db){
 	$sql = "SELECT r.*, COUNT(op.id) as num_opiniones
 			FROM restaurantes r LEFT JOIN opiniones_restaurantes op ON (r.id = op.id_restaurante)
-			WHERE r.id = op.id_restaurante
+			WHERE r.id = op.id_restaurante AND r.validado = 1
 			GROUP BY r.id
 			ORDER BY num_opiniones DESC;";
 	$query = $db->query($sql);
@@ -209,7 +210,7 @@ $app->get('/mas-comentarios', function() use ($app, $db){
 $app->get('/menos-comentarios', function() use ($app, $db){
 	$sql = "SELECT r.*, COUNT(op.id) as num_opiniones
 			FROM restaurantes r LEFT JOIN opiniones_restaurantes op ON (r.id = op.id_restaurante)
-			WHERE r.id = op.id_restaurante
+			WHERE r.id = op.id_restaurante AND r.validado = 1
 			GROUP BY r.id
 			ORDER BY num_opiniones ASC;";
 	$query = $db->query($sql);
@@ -228,6 +229,77 @@ $app->get('/menos-comentarios', function() use ($app, $db){
 			'code' => 200,
 			//con esto al devolver la variable result, devolvemos tb el array de objetos ($restaurantes)
 			'data' => $restaurantesCom
+		);
+	}
+	echo json_encode($result);
+});
+
+//LISTAR LOS RESTAURANTES NO VALIDADOS
+$app->get('/no-validados', function() use ($app, $db){
+	$sql = "SELECT * FROM restaurantes WHERE validado = 0 ORDER BY id ASC;";
+	$query = $db->query($sql);
+
+	while ($restauranteNV = ($query->fetch_assoc())) {
+		$restaurantesNV[] = $restauranteNV;
+	}
+	if (empty($restaurantesNV)){
+		$result = array(
+			'status' => 'error',
+			'code' => 404,
+			'message' => 'No hay restaurantes para mostrar'
+		);
+	} else {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'data' => $restaurantesNV
+		);
+	}
+	echo json_encode($result);
+});
+
+/* VALIDAR UN RESTAURANTE, ES DECIR, PONER EL CAMPO "VALIDADO" A 1*/
+$app->get('/validar-restaurante/:id', function($id) use ($app, $db){
+	$sql = 'UPDATE restaurantes 
+			SET validado = 1 
+			WHERE id = '.$id.';';
+	$query = $db->query($sql);
+	if ($query){
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'message' => 'Restaurante '.$id.' validado'
+		);
+	}
+	else {
+		$result = array(
+			'status' => 'error',
+			'code' => 404,
+			'message' => 'El restaurante '.$id.' no ha podido ser validado'
+		);
+	}
+	echo json_encode($result);
+});
+
+/* DENEGAR UNA PETICIÓN, ES DECIR, BORRARLA */
+$app->get('/denegar-restaurante/:id', function($id) use ($app, $db){
+	$sql = 'DELETE 
+			FROM restaurantes 
+			WHERE id ='.$id.';';
+
+	$query = $db->query($sql);
+	if ($query){
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'message' => 'Restaurante '.$id.' denegado'
+		);
+	}
+	else {
+		$result = array(
+			'status' => 'error',
+			'code' => 404,
+			'message' => 'El restaurante '.$id.' no ha podido ser denegado'
 		);
 	}
 	echo json_encode($result);
@@ -349,6 +421,51 @@ $app->post('/restaurantes', function() use ($app, $db){
 	}
 
 	//mostramos el rsultado de la consulta
+	echo json_encode($result);
+});
+
+$app->post('/restaurantes-user', function() use ($app, $db){
+	$json = $app->request->post('json');
+	$data = json_decode($json, true);
+	
+	if(!isset($data['direccion'])){
+		$data['direccion']=null;
+	}
+	if(!isset($data['latitud'])){
+		$data['latitud']=null;
+	}
+	if(!isset($data['longitud'])){
+		$data['longitud']=null;
+	}
+	if(!isset($data['url'])){
+		$data['url']=null;
+	}
+	if(!isset($data['imagen'])){
+		$data['imagen']=null;
+	}
+	//hacer una query a la base de datos
+	$query = "INSERT INTO restaurantes VALUES(NULL,".
+			"'{$data['nombre']}',".
+			"'{$data['direccion']}',".
+			"'{$data['latitud']}',".
+			"'{$data['longitud']}',".
+			"'{$data['url']}',".
+			"'{$data['imagen']}', ".
+			"0);";
+
+	$insert = $db->query($query);
+	$result = array(
+		'status' => 'error',
+		'code' => 404,
+		'message' => 'Restaurante no creado'
+	);
+	if ($insert){
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'message' => 'Restaurante creado'
+		);
+	}
 	echo json_encode($result);
 });
 
