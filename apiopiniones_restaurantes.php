@@ -269,7 +269,7 @@ $app->post('/update-opinion/:id', function($id) use ($app, $db) {
 
 /* DEVOLVER LAS MEJORES OPINIONES (LAS QUE TIENEN MAYOR PUNTUACIÓN) */
 $app->get('/mejores-opiniones', function() use ($app, $db){
-	$sql = 'SELECT op.*, r.nombre FROM opiniones_restaurantes op JOIN restaurantes r ON (op.id_restaurante = r.id) WHERE op.imagen != "" ORDER BY op.puntuacion DESC LIMIT 5;';
+	$sql = 'SELECT op.*, r.nombre FROM opiniones_restaurantes op JOIN restaurantes r ON (op.id_restaurante = r.id) WHERE op.imagen != "" ORDER BY op.puntuacion DESC, op.fecha DESC LIMIT 7;';
 	$query = $db->query($sql);
 
 	while ($mejorOp = ($query->fetch_assoc())) {

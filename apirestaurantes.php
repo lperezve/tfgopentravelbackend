@@ -414,6 +414,9 @@ $app->post('/restaurantes', function() use ($app, $db){
 	//el parámetro true, hace que nos convierta ese objeto en un array
 	$data = json_decode($json, true);
 	
+	if(!isset($data['nombre'])){
+		$data['nombre']=null;
+	}
 	//vamos a hacer un if para todos los parámetros que no son obligatorios
 	//dirección
 	if(!isset($data['direccion'])){
@@ -435,6 +438,10 @@ $app->post('/restaurantes', function() use ($app, $db){
 		$data['imagen']=null;
 	}
 
+	if(!isset($data['ciudad'])){
+		$data['ciudad']=null;
+	}
+
 	//hacer una query a la base de datos
 	$query = "INSERT INTO restaurantes VALUES(NULL,".
 			"'{$data['nombre']}',".
@@ -442,7 +449,8 @@ $app->post('/restaurantes', function() use ($app, $db){
 			"'{$data['latitud']}',".
 			"'{$data['longitud']}',".
 			"'{$data['url']}',".
-			"'{$data['imagen']}, '".
+			"'{$data['imagen']}',".
+			"'{$data['ciudad']}',".
 			"1);";
 
 	//vamos a insertar la query en la bd
@@ -488,6 +496,9 @@ $app->post('/restaurantes-user', function() use ($app, $db){
 	if(!isset($data['imagen'])){
 		$data['imagen']=null;
 	}
+	if(!isset($data['ciudad'])){
+		$data['ciudad']=null;
+	}
 	//hacer una query a la base de datos
 	$query = "INSERT INTO restaurantes VALUES(NULL,".
 			"'{$data['nombre']}',".
@@ -496,6 +507,7 @@ $app->post('/restaurantes-user', function() use ($app, $db){
 			"'{$data['longitud']}',".
 			"'{$data['url']}',".
 			"'{$data['imagen']}', ".
+			"'{$data['ciudad']}', ".
 			"0);";
 
 	$insert = $db->query($query);
@@ -550,7 +562,7 @@ $app->post('/update-restaurantes/:id', function($id) use ($app, $db){
 		$sql .="imagen = '{$data["imagen"]}', ";
 	}
 
-	$sql .= "url = '{$data["url"]}' WHERE id = {$id};";
+	$sql .= "url = '{$data["url"]}', ciudad = '{$data["ciudad"]}' WHERE id = {$id};";
 	//var_dump($sql);
 	$query = $db->query($sql);
 
