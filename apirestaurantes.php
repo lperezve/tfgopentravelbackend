@@ -76,9 +76,6 @@ $app->get('/restaurantes-propietario', function() use ($app, $db){
 
 });
 
-/* 
-*/
-
 $app->get('/restaurantes-propietario-avg', function() use ($app, $db){
 	$sql = 'SELECT r.*, p.id_usuario, p.validado, ROUND(AVG(op.puntuacion),0) as media FROM opiniones_restaurantes op RIGHT JOIN restaurantes r ON (op.id_restaurante = r.id) LEFT JOIN propiedades p ON (r.id = p.id_restaurante) WHERE r.validado = 1 GROUP BY r.id ORDER BY r.id DESC;';
 	$query = $db->query($sql);
@@ -317,7 +314,6 @@ $app->get('/tiene-propietario/:id', function($id) use ($app, $db){
 			'message' => 'restaurante no encontrado'
 		);
 		if ($query->num_rows == 1) {
-		//conseguimos el producto de la base de datos
 			$propietario = $query->fetch_assoc();
 			$sihay = true;
 			$result = array(
@@ -337,6 +333,54 @@ $app->get('/tiene-propietario/:id', function($id) use ($app, $db){
 		}
 		echo json_encode($result);
 });
+
+/* OBTENER TODAS LAS CIUDADES DE LOS RESTAURANTES */
+$app->get('/ciudades', function() use ($app, $db){
+	$sql = "SELECT ciudad FROM restaurantes GROUP BY ciudad;";
+	$query = $db->query($sql);
+
+	while ($ciudad = ($query->fetch_assoc())) {
+		$ciudades[] = $ciudad;
+	}
+	if (empty($ciudades)){
+		$result = array(
+			'status' => 'error',
+			'code' => 404,
+			'message' => 'No hay ciudades para mostrar'
+		);
+	} else {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'data' => $ciudades
+		);
+	}
+	echo json_encode($result);
+});
+
+/* OBTENER LOS RESTAURANTES DE LA CIUDAD X */
+$app->get('/rest-ciudad/:ciudad', function($ciudad) use ($app, $db){
+	$sql = "SELECT * FROM restaurantes WHERE ciudad = '".$ciudad."';";
+	$query = $db->query($sql);
+	while ($restCiudad = ($query->fetch_assoc())) {
+		$restaurantesCiudad[] = $restCiudad;
+	}
+	if (empty($restaurantesCiudad)){
+		$result = array(
+			'status' => 'error',
+			'code' => 404,
+			'message' => 'No hay restaurantes para mostrar'
+		);
+	} else {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'data' => $restaurantesCiudad
+		);
+	}
+	echo json_encode($result);
+});
+
 
 //LISTAR UN RESTAURANTE (ID)
 $app->get('/restaurantes/:id', function($id) use ($app, $db){
@@ -398,8 +442,8 @@ $app->post('/restaurantes', function() use ($app, $db){
 			"'{$data['latitud']}',".
 			"'{$data['longitud']}',".
 			"'{$data['url']}',".
-			"'{$data['imagen']}'".
-			");";
+			"'{$data['imagen']}, '".
+			"1);";
 
 	//vamos a insertar la query en la bd
 	$insert = $db->query($query);
@@ -424,6 +468,7 @@ $app->post('/restaurantes', function() use ($app, $db){
 	echo json_encode($result);
 });
 
+//CUANDO UN USUARIO REGISTRADO INSERTA EN RESTAURANTE
 $app->post('/restaurantes-user', function() use ($app, $db){
 	$json = $app->request->post('json');
 	$data = json_decode($json, true);
@@ -527,19 +572,6 @@ $app->post('/update-restaurantes/:id', function($id) use ($app, $db){
 
 /* OBTENEMOS LAS OPINIONES DEL RESTAURANTE (ID) DESEADO */
 $app->get('/opiniones/:id_rest', function($id_rest) use ($app, $db) {
-	/*$sql = 'SELECT * FROM opiniones_restaurantes WHERE id_restaurante = '.$id_rest.' ORDER BY fecha DESC;';
-	$query = $db->query($sql);
-
-	while ($opinion = ($query->fetch_assoc())) {
-		$opiniones[] = $opinion;
-	}
-	for ($i=0; $i<count($opiniones); $i++){
-		$sqlusuario = "SELECT nombre FROM usuarios JOIN opiniones_restaurantes ON (usuarios.id = opiniones_restaurantes.id_usuario) WHERE opiniones_restaurantes.id_restaurante = ".$id_rest." AND opiniones_restaurantes.id = ".$opiniones[$i]['id'].";";
-		$query2 = $db->query($sqlusuario);
-		if ($query2->num_rows == 1){
-			$usuarios[] = $query2->fetch_assoc();
-		}
-	}*/
 	$sql = 'SELECT * FROM usuarios JOIN opiniones_restaurantes ON (usuarios.id = opiniones_restaurantes.id_usuario) WHERE opiniones_restaurantes.id_restaurante = '.$id_rest.' ORDER BY fecha DESC;';
 	$query = $db->query($sql);
 	while ($opinion = ($query->fetch_assoc())) {

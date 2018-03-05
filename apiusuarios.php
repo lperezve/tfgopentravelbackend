@@ -229,6 +229,33 @@ $app->get('/atributos', function() use ($app, $db) {
 	echo json_encode($result);
 });
 
+//COMPROBAR SI EL EMAIL EXISTE YA EN LA BASE DE DATOS O NO
+
+$app->get('/existe-email/:email', function($email) use ($app, $db){
+	$sql = "SELECT * FROM usuarios WHERE email = '".$email."';";
+	$query = $db->query($sql);
+	$result = array(
+		'status' => 'error',
+		'code' => 404,
+		'message' => 'usuario no encontrado',
+	);
+	if ($query->num_rows == 1) {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'bandera' => true
+		);
+	}
+	else {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'bandera' => false
+		);
+	} 
+	echo json_encode($result);
+});
+
 
 $app->run();
 ?>

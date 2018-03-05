@@ -53,10 +53,10 @@ CREATE TABLE provincias (
 	CONSTRAINT 		pk_provincias PRIMARY KEY (id)
 )ENGINE=InnoDb;
 
-CREATE TABLE historial_rest_prov (
+/*CREATE TABLE historial_rest_prov (
 	id 				int(255) auto_increment not null,
 	id_restaurante	int(255) not null UNIQUE,
 	id_provincia	int(255) not null,
 	CONSTRAINT pk_idrestprovincia PRIMARY KEY (id),
 	CONSTRAINT fk_idrestaurante_historial FOREIGN KEY (id_restaurante) REFERENCES restaurantes(id) ON DELETE CASCADE ON UPDATE CASCADE
-)ENGINE=InnoDb;
+)ENGINE=InnoDb;*/

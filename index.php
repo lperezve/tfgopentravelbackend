@@ -21,6 +21,7 @@ $conjunto = array();
 $elemInsertJson = array();
 $contador = 0;
 $consultas = array();
+$ciudadJson = '';
 /* ----------------------------------------------------------*/
 
 
@@ -205,7 +206,7 @@ $app->get('/csv-fields/:nombre/:sep', function($nombre, $sep) use($app){
 });
 
 //sep: separacion del csv
-$app->post('/up-csv/:filename/:sep', function($filename, $sep) use ($app, $db) {
+$app->post('/up-csv/:filename/:sep/:ciudad', function($filename, $sep, $ciudad) use ($app, $db) {
 	$json = $app->request->post('json');
 	$data = json_decode($json, true); //aquí tengo el objeto restaurante con los campos que debo coger del fichero csv
 	
@@ -301,17 +302,18 @@ $app->post('/up-csv/:filename/:sep', function($filename, $sep) use ($app, $db) {
 					$campos[] = $row['Field'];
 				}
 		        
-
+				$numRegistros = 0;
 			    $encFields = false;
 			    $item = 0;
 			    // Por cada elemento de array, tengo que recorrer los atributos de la bd
 			    for ($a = 0; $a<count($array); $a++){
 			    	//----- EMPIEZA LA CONSULTA PARA INSERTAR -------
-					$queryIns = "INSERT INTO restaurantes VALUES(NULL, ";
+					$queryIns = "INSERT INTO restaurantes (id, nombre, direccion, latitud, longitud, url, imagen, ciudad, validado) VALUES (NULL, ";
 			    	$longInfoItem = count($array[$a]);
 			    	// por cada atributo de la bd, tengo que comprobar que esté en data(key), y, si está, sacar el data(value)
 			    	$longCampos = count($campos);
-			    	for ($c=1; $c<$longCampos; $c++) {
+			    	//SE RECORRE HASTA LONGCAMPOS-1 PORQUE EL ÚLTIMO CAMPO ES VALIDADO, QUE NO SE NECESITA
+			    	for ($c=1; $c<$longCampos-2; $c++) {
 			    		$nameAtr = $campos[$c];
 			    		$nameData = $data[strval($campos[$c])];
 			    		if(empty(!$nameData)){
@@ -341,14 +343,16 @@ $app->post('/up-csv/:filename/:sep', function($filename, $sep) use ($app, $db) {
 			    	}
 			    	//INSERTAR LA TUPLA EN LA BD //
 			    	//aqui tenemos el array con todos los atributos para insertar en la tupla, en jsonArray
-			    	$queryIns .=");";
+			    	$queryIns .="'".$ciudad."',1);";
 			    	$insert = $db->query($queryIns);
 			    	if ($insert){
 			    		$insertado = true;
+			    		$numRegistros++;
 			    		$result = array(
 							'status' 	=> 'success',
 							'code'		=> 200,
-							'message' => 'Se ha insertado correctamente'
+							'message' => 'Se ha insertado correctamente',
+							'numRegistros'	=> $numRegistros
 						);
 			    	}
 			    	else {
@@ -360,28 +364,6 @@ $app->post('/up-csv/:filename/:sep', function($filename, $sep) use ($app, $db) {
 						);
 			    	}
 				} 
-			    /*$result = array(
-					'status' 	=> 'success',
-					'code'		=> 200,
-					'campos'	=> $campos,
-					'sql'		=> $sql,
-					//'longCampos' => $longCampos,
-					//'nameData' => $nameData,
-					//'nameAtr' 	=> $nameAtr,
-					//'longFields' => $longFields,
-					//'fields'	=> $fields,
-					//'nameFields' => $nameFields,
-					//'jsonArray'	=> $jsonArray,
-					//'item'		=> $item,
-					//'a'			=> $a,
-					//'info'		=> $info,
-					//'data'		=> $data,
-					//'longInfoItem' => $longInfoItem,
-					'insertado' => $insertado,
-					//'valor'		=> $valor,
-					'queryIns'	=> $queryIns,
-					//'separacion' => $sep
-				);*/
 		    }
 		    else {
 		         $result = array (
@@ -446,10 +428,12 @@ $app->get('/json-fields/:nombre', function($nombre) use($app){
 });
 
 //SUBIR EL JSON PARSEADO A LA BASE DE DATOS UNA VEZ OBTENIDO EL EMPAREJAMIENTO
-$app->post('/up-json/:filename', function($filename) use ($app, $db) {
+$app->post('/up-json/:filename/:ciudad', function($filename, $ciudad) use ($app, $db) {
 	// VARIABLES GLOBALES QUE NECESITO EN AMBOS MÉTODOS 
 	global $elemInsertJson;
 	global $consultas;
+	global $ciudadJson;
+	$ciudadJson = $ciudad;
 
 	//aquí tengo el objeto restaurante con los campos que debo coger del fichero json
 	$json = $app->request->post('json');
@@ -487,6 +471,7 @@ $app->post('/up-json/:filename', function($filename) use ($app, $db) {
 			'elementosData' => $elementosData,
 			'elemInsertJson'	=> $elemInsertJson,
 			'consultas'	=> $consultas,
+			'numRegistros' => count($consultas),
 			'insert'	=> $insert
 		);
 		$elemInsertJson = array();
@@ -526,6 +511,7 @@ function findAndInsert($filevalue, $hoja, $parejas, $elemParejas){
 	global $elemInsertJson;
 	global $contador;
 	global $consultas;
+	global $ciudadJson;
 	$prueba = $hoja;	
 	foreach ($filevalue as $key => $value) {
 		$hojanueva = $prueba;
@@ -595,8 +581,7 @@ function findAndInsert($filevalue, $hoja, $parejas, $elemParejas){
 							"'$elemInsertJson[2]', ".
 							"'$elemInsertJson[3]', ".
 							"'$elemInsertJson[4]', ".
-							"'$elemInsertJson[5]');";
-						//$insert = $db->query($query);
+							"'$elemInsertJson[5]','".$ciudadJson."',1);";
 						array_push($consultas, $query);		
 					}			
 				}

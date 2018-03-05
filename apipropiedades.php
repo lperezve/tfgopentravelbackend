@@ -144,6 +144,35 @@ $app->get('/hay-peticion/:id_usuario/:id_restaurante', function($id_usuario, $id
 	echo json_encode($result);
 });
 
+//COMPROBAR SI PARA EL RESTAURANTE X, EL ID DE USUARIO QUE SE PASA POR PARÁMETRO ES SU DUEÑO O NO
+$app->get('/comprobar-propietario/:id_restaurante/:id_usuario', function($id_rest, $id_usu) use ($app, $db){
+	$sql = 'SELECT *
+			FROM propiedades
+			WHERE id_restaurante = '.$id_rest.' and id_usuario = '.$id_usu.' and validado = 1;';
+	$query = $db->query($sql);
+	$result = array(
+		'status' => 'error',
+		'code' => 404,
+		'message' => 'Restaurante no encontrado'
+	);
+	if ($query->num_rows == 1) {
+		$restaurante = $query->fetch_assoc();
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'bandera' => true
+		);
+	}
+	else {
+		$result = array(
+			'status' => 'success',
+			'code' => 200,
+			'bandera' => false
+		);
+	}
+	echo json_encode($result);
+});
+
 $app->run();
 ?>
 
