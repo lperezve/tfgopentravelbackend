@@ -61,7 +61,7 @@ $app->post('/upload-image', function() use($db, $app){
 	echo json_encode($result);
 });
 
-//Subir un dataset: ya sea json o csv
+//Subir un dataset: json o csv
 $app->post('/upload-dataset', function() use($db, $app){
 	$correcto = false;
 	$result = array(
@@ -140,68 +140,50 @@ con los atributos de la BD */
 $app->get('/csv-fields/:nombre/:sep', function($nombre, $sep) use($app){
 	$namefichero = explode(".", $nombre);
 	$extension = $namefichero[sizeof($namefichero)-1];
-	if ($extension == "csv"){
-		$directory = "uploads/datasets/csv";
-		
-		$dirint = dir($directory);
-		$fields = array();
-	    $fila = 1;
+	$directory = "uploads/datasets/csv";
+	
+	$dirint = dir($directory);
+	$fields = array();
+    $fila = 1;
 
-		while (($archivo = $dirint->read()) !== false) {
-	        if ($archivo == $nombre){
-	        	if ($extension == "csv"){
-		        	$csv = file_get_contents("./uploads/datasets/csv/$nombre");
-		        	if (($gestor = fopen("./uploads/datasets/csv/$nombre", "r")) !== FALSE) {
-				        while ((($datos = fgetcsv($gestor, 1000, $sep)) !== FALSE) && ($fila <=2)) {
-				            $fila++;
-				            if ($fila <=2){
-				                $fields = $datos;
-				            }
-				        }
-				    }
-			        fclose($gestor);
-			        if (count($fields) <=1){
-			        	$result = array(
-						'status' 	=> 'error',
-						'code'		=> 404,
-						'message' 		=> "El carácter de separación es incorrecto"
-						);
-			        }
-			        else {
-				        $result = array(
-							'status' 	=> 'success',
-							'code'		=> 200,
-							'data' 		=> $fields
-						);
-			    	}
-			    }
-			    else {
-			    	//hacerlo para --> json <--
-			    	$result = array(
-						'message' 	=> 'implementar para json',
-					);
-			    }
-			} else {
-				$result = array(
-					'status' 	=> 'error',
-					'code'		=> 404,
-					'message' 	=> 'El archivo no existe',
-					'extension' => $extension,
-					'archivo'	=> $archivo,
-					'nombre'	=> $nombre
+	while (($archivo = $dirint->read()) !== false) {
+        if ($archivo == $nombre){
+        	$csv = file_get_contents("./uploads/datasets/csv/$nombre");
+        	if (($gestor = fopen("./uploads/datasets/csv/$nombre", "r")) !== FALSE) {
+		        while ((($datos = fgetcsv($gestor, 1000, $sep)) !== FALSE) && ($fila <=2)) {
+		            $fila++;
+		            if ($fila <=2){
+		                $fields = $datos;
+		            }
+		        }
+		    }
+	        fclose($gestor);
+	        if (count($fields) <=1){
+	        	$result = array(
+				'status' 	=> 'error',
+				'code'		=> 404,
+				'message' 		=> "El carácter de separación es incorrecto"
 				);
-			}
-	    }
-	    $dirint->close();
-	}
-	elseif($extension == "json"){
-		$result = array(
-			'status' 	=> 'error',
-			'code'		=> 404,
-			'message' 	=> 'La extensión no es correcta',
-		);
-	}
-
+	        }
+	        else {
+		        $result = array(
+					'status' 	=> 'success',
+					'code'		=> 200,
+					'data' 		=> $fields
+				);
+	    	}
+		} else {
+			$result = array(
+				'status' 	=> 'error',
+				'code'		=> 404,
+				'message' 	=> 'El archivo no existe',
+				'extension' => $extension,
+				'archivo'	=> $archivo,
+				'nombre'	=> $nombre
+			);
+		}
+    }
+    $dirint->close();
     echo json_encode($result);
 });
 
@@ -225,7 +207,6 @@ $app->post('/up-csv/:filename/:sep/:ciudad', function($filename, $sep, $ciudad) 
     $i = 0;
     $insertado = false;
     $separacion = $sep;
-    $jsonArray = array();
     while (($archivo = $dirint->read()) !== false) {
         if ($archivo == $filename){
         	$json = file_get_contents("./uploads/datasets/csv/$filename");
@@ -295,7 +276,7 @@ $app->post('/up-csv/:filename/:sep/:ciudad', function($filename, $sep, $ciudad) 
 		            'count($array[0])' => count($array[0]),
 					'separacion' => $sep
 		        );
-		        // 4. Una vez tengo todos los datos, tengo que hacer un for que recorra tantas veces como elementos tenga en info 
+		        // 4. Una vez tengo todos los datos, tengo que hacer un for que recorra tantas veces como elementos tenga en array 
 			    $sql = 'DESCRIBE restaurantes';
 				$query = $db->query($sql);
 				while($row = $query->fetch_assoc()){
@@ -308,7 +289,7 @@ $app->post('/up-csv/:filename/:sep/:ciudad', function($filename, $sep, $ciudad) 
 			    // Por cada elemento de array, tengo que recorrer los atributos de la bd
 			    for ($a = 0; $a<count($array); $a++){
 			    	//----- EMPIEZA LA CONSULTA PARA INSERTAR -------
-					$queryIns = "INSERT INTO restaurantes (id, nombre, direccion, latitud, longitud, url, imagen, ciudad, validado) VALUES (NULL, ";
+					$queryIns = "INSERT INTO restaurantes (id, nombre, direccion, email, telefono, latitud, longitud, url, imagen, ciudad, validado) VALUES (NULL, ";
 			    	$longInfoItem = count($array[$a]);
 			    	// por cada atributo de la bd, tengo que comprobar que esté en data(key), y, si está, sacar el data(value)
 			    	$longCampos = count($campos);
@@ -325,9 +306,6 @@ $app->post('/up-csv/:filename/:sep/:ciudad', function($filename, $sep, $ciudad) 
 									$item = $d;
 									$encFields = true;
 									$nameFields = $fields[$d];
-
-									$jsonArray[$c]=$array[$a][$item];
-									// en jsonArray[c] tenemos cada elemento que hay que meter en la tupla de la bd 
 									$valor = strval($array[$a][$item]);
 									$queryIns .="'".$valor."'";
 
@@ -342,7 +320,6 @@ $app->post('/up-csv/:filename/:sep/:ciudad', function($filename, $sep, $ciudad) 
 			    			$queryIns .=", ";
 			    	}
 			    	//INSERTAR LA TUPLA EN LA BD //
-			    	//aqui tenemos el array con todos los atributos para insertar en la tupla, en jsonArray
 			    	$queryIns .="'".$ciudad."',1);";
 			    	$insert = $db->query($queryIns);
 			    	if ($insert){
@@ -352,7 +329,10 @@ $app->post('/up-csv/:filename/:sep/:ciudad', function($filename, $sep, $ciudad) 
 							'status' 	=> 'success',
 							'code'		=> 200,
 							'message' => 'Se ha insertado correctamente',
-							'numRegistros'	=> $numRegistros
+							'numRegistros'	=> $numRegistros,
+							'data'		=> $data,
+							'info'		=> $info,
+							'queryIns'	=> $queryIns
 						);
 			    	}
 			    	else {
@@ -429,52 +409,52 @@ $app->get('/json-fields/:nombre', function($nombre) use($app){
 
 //SUBIR EL JSON PARSEADO A LA BASE DE DATOS UNA VEZ OBTENIDO EL EMPAREJAMIENTO
 $app->post('/up-json/:filename/:ciudad', function($filename, $ciudad) use ($app, $db) {
-	// VARIABLES GLOBALES QUE NECESITO EN AMBOS MÉTODOS 
-	global $elemInsertJson;
+	// Variables globales necesarias en ambos métodos
 	global $consultas;
 	global $ciudadJson;
 	$ciudadJson = $ciudad;
-
-	//aquí tengo el objeto restaurante con los campos que debo coger del fichero json
+	//Objeto restaurante con los campos que se deben coger del fichero json
 	$json = $app->request->post('json');
 	$data = json_decode($json, true); 
-
 	
-	//1. OBTENER EL NÚMERO DE CAMPOS QUE TIENE DATA
+	//1. Obtener el número de campos no vacíos que tiene $data
 	$elementosData = 0;
 	foreach ($data as $datakey => $datavalue) {
 		if (!empty($datavalue)){
 			$elementosData++;
 		}
 	}
-	$result = array(
-			'status' 	=> 'error',
-			'code'		=> 404,
-			'message' 		=> "no va bien"
-	);
 
-	//PARA OBTENER EL FICHERO JSON Y PODER RECORRERLO 
+	//2. Obtener el fichero json correspondiente para recorrerlo
 	$datos = file_get_contents("uploads/datasets/json/".$filename);
 	$file = json_decode($datos, true);
-	// LLAMAMOS AL MÉTODO RECURSIVO PARA QUE EMPIECE A RECORRER EL JSON E INSERTAR CUANDO ES DEBIDO, ES NECESARIO TAMBIÉN DATA, Y EL NÚMERO DE ELEMENTOS DE ESTA.
+
+	//3. Llamada al método recursivo para que recorra el json e inserte cuando es debido. Para la llamada es necesario $data y el número de elementos de esta
 	findAndInsert($file, "", $data, $elementosData);
+
+	//4. Al terminar de recorrer el fichero, se tiene en $consultas todas las querys de inserción de cada establecimiento del fichero.
 	if (!empty($consultas)){
 		for ($j=0; $j < count($consultas); $j++) { 
 			$insert = $db->query($consultas[$j]);
 		}
 	}
 
-	if (!empty($elemInsertJson)){
+	if ($insert){
 		$result = array(
 			'status' 	=> 'success',
 			'code'		=> 200,
 			'elementosData' => $elementosData,
-			'elemInsertJson'	=> $elemInsertJson,
 			'consultas'	=> $consultas,
 			'numRegistros' => count($consultas),
 			'insert'	=> $insert
 		);
-		$elemInsertJson = array();
+	}
+	else {
+		$result = array(
+			'status' 	=> 'error',
+			'code'		=> 404,
+			'message' 	=> "Error en la inserción"
+		);
 	}
 	echo json_encode($result);
 });
@@ -482,7 +462,7 @@ $app->post('/up-json/:filename/:ciudad', function($filename, $ciudad) use ($app,
 
 function recorrido($filevalue, $hoja){
 	global $conjunto;
-	global $elemInsertJson;
+	//global $elemInsertJson;
 	$prueba = $hoja;
 	foreach ($filevalue as $key => $value) {
 		$hojanueva = $prueba;
@@ -529,7 +509,6 @@ function findAndInsert($filevalue, $hoja, $parejas, $elemParejas){
 		}
 		else {
 			$hojanueva .= $key;
-			//array_push($elemInsertJson, $elemParejas);
 			//2. Por cada hoja nueva a la que llego, necesito buscar si ese valor existe en data (en $parejas). Para ello, recorremos data con un foreach 
 			foreach ($parejas as $keypar => $valuepar) {
 				// Si el valor de $hojanueva, está en alguno de los valores de data (parejas)
@@ -546,26 +525,34 @@ function findAndInsert($filevalue, $hoja, $parejas, $elemParejas){
 							$elemInsertJson[1] = $valueInsert;
 							$contador++;
 							break;
-						case 'latitud':
+						case 'email':
 							$elemInsertJson[2] = $valueInsert;
 							$contador++;
 							break;
-						case 'longitud':
+						case 'telefono':
 							$elemInsertJson[3] = $valueInsert;
 							$contador++;
 							break;
-						case 'url':
+						case 'latitud':
 							$elemInsertJson[4] = $valueInsert;
 							$contador++;
 							break;
-						case 'imagen':
+						case 'longitud':
 							$elemInsertJson[5] = $valueInsert;
+							$contador++;
+							break;
+						case 'url':
+							$elemInsertJson[6] = $valueInsert;
+							$contador++;
+							break;
+						case 'imagen':
+							$elemInsertJson[7] = $valueInsert;
 							$contador++;
 							break;
 						default:
 							break;
 					}
-					// 5. Cuando el contador sea igual al número de de elementos ya tendremos todos los valores necesarios y por tanto, toca insertar en la base de datos.
+					// 5. Cuando el contador sea igual al número de elementos ya tendremos todos los valores necesarios y por tanto, toca insertar en la base de datos.
 					if ($contador == $elemParejas){
 						$contador = 0;
 						//Para asignar un valor nulo si el atributo x no ha sido seleccionado
@@ -581,7 +568,9 @@ function findAndInsert($filevalue, $hoja, $parejas, $elemParejas){
 							"'$elemInsertJson[2]', ".
 							"'$elemInsertJson[3]', ".
 							"'$elemInsertJson[4]', ".
-							"'$elemInsertJson[5]','".$ciudadJson."',1);";
+							"'$elemInsertJson[5]', ".
+							"'$elemInsertJson[6]', ".
+							"'$elemInsertJson[7]','".$ciudadJson."',1);";
 						array_push($consultas, $query);		
 					}			
 				}

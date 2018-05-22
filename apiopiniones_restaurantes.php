@@ -129,7 +129,7 @@ $app->get('/opinion/:id', function($id) use ($app, $db) {
 
 /* OBTENER LAS OPINIONES SEGÚN LA FECHA: DE LA MÁS RECIENTE A LA MÁS ANTIGUA */
 $app->get('/opiniones-recientes', function() use ($app, $db){
-	$sql = 'SELECT * FROM opiniones_restaurantes ORDER BY fecha DESC LIMIT 10';
+	$sql = 'SELECT * FROM opiniones_restaurantes ORDER BY fecha DESC LIMIT 12';
 	$query = $db->query($sql);
 
 	while ($opinionFecha = ($query->fetch_assoc())) {
@@ -214,7 +214,7 @@ $app->post('/upload-images', function() use ($db, $app){
 });
 
 //borrar una opinión
-$app->get('/delete-opinion/:id', function($id) use ($app, $db){
+$app->delete('/delete-opinion/:id', function($id) use ($app, $db){
 	$sql = 'DELETE FROM opiniones_restaurantes WHERE id = '.$id.';';
 	$query = $db->query($sql);
 
@@ -235,7 +235,7 @@ $app->get('/delete-opinion/:id', function($id) use ($app, $db){
 });
 
 //actualizar una opinión
-$app->post('/update-opinion/:id', function($id) use ($app, $db) {
+$app->put('/update-opinion/:id', function($id) use ($app, $db) {
 	$json = $app->request->post('json');
 	$data = json_decode($json, true);
 

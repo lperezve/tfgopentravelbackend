@@ -279,7 +279,7 @@ $app->get('/validar-restaurante/:id', function($id) use ($app, $db){
 });
 
 /* DENEGAR UNA PETICIÓN, ES DECIR, BORRARLA */
-$app->get('/denegar-restaurante/:id', function($id) use ($app, $db){
+$app->delete('/denegar-restaurante/:id', function($id) use ($app, $db){
 	$sql = 'DELETE 
 			FROM restaurantes 
 			WHERE id ='.$id.';';
@@ -386,13 +386,6 @@ $app->get('/rest-ciudad/:ciudad', function($ciudad) use ($app, $db){
 $app->get('/restaurantes/:id', function($id) use ($app, $db){
 	$sql = 'SELECT * FROM restaurantes WHERE id = '.$id.';';
 	$query = $db->query($sql);
-	
-	$result = array(
-		'status' => 'error',
-		'code' => 404,
-		'message' => 'restaurante no encontrado'
-	);
-
 	//si la query nos devuelve una columna es que el resultado está correcto
 	if ($query->num_rows == 1) {
 		//conseguimos el producto de la base de datos
@@ -401,6 +394,13 @@ $app->get('/restaurantes/:id', function($id) use ($app, $db){
 			'status' => 'success',
 			'code' => 200,
 			'data' => $restaurante
+		);
+	}
+	else {
+		$result = array(
+		'status' => 'error',
+		'code' => 404,
+		'message' => 'restaurante no encontrado'
 		);
 	} 
 	echo json_encode($result);
@@ -417,10 +417,17 @@ $app->post('/restaurantes', function() use ($app, $db){
 	if(!isset($data['nombre'])){
 		$data['nombre']=null;
 	}
-	//vamos a hacer un if para todos los parámetros que no son obligatorios
 	//dirección
 	if(!isset($data['direccion'])){
 		$data['direccion']=null;
+	}
+	//email
+	if(!isset($data['email'])){
+		$data['email']=null;
+	}
+	//telefono
+	if(!isset($data['telefono'])){
+		$data['telefono']=null;
 	}
 	//latitud
 	if(!isset($data['latitud'])){
@@ -446,6 +453,8 @@ $app->post('/restaurantes', function() use ($app, $db){
 	$query = "INSERT INTO restaurantes VALUES(NULL,".
 			"'{$data['nombre']}',".
 			"'{$data['direccion']}',".
+			"'{$data['email']}',".
+			"'{$data['telefono']}',".
 			"'{$data['latitud']}',".
 			"'{$data['longitud']}',".
 			"'{$data['url']}',".
@@ -484,6 +493,14 @@ $app->post('/restaurantes-user', function() use ($app, $db){
 	if(!isset($data['direccion'])){
 		$data['direccion']=null;
 	}
+	//email
+	if(!isset($data['email'])){
+		$data['email']=null;
+	}
+	//telefono
+	if(!isset($data['telefono'])){
+		$data['telefono']=null;
+	}
 	if(!isset($data['latitud'])){
 		$data['latitud']=null;
 	}
@@ -503,6 +520,8 @@ $app->post('/restaurantes-user', function() use ($app, $db){
 	$query = "INSERT INTO restaurantes VALUES(NULL,".
 			"'{$data['nombre']}',".
 			"'{$data['direccion']}',".
+			"'{$data['email']}',".
+			"'{$data['telefono']}',".
 			"'{$data['latitud']}',".
 			"'{$data['longitud']}',".
 			"'{$data['url']}',".
@@ -527,7 +546,7 @@ $app->post('/restaurantes-user', function() use ($app, $db){
 });
 
 //BORRAR UN RESTAURANTE
-$app->get('/delete-restaurantes/:id', function($id) use ($app, $db){
+$app->delete('/delete-restaurantes/:id', function($id) use ($app, $db){
 	$sql = 'DELETE FROM restaurantes WHERE id = '.$id.';';
 	$query = $db->query($sql);
 
@@ -548,13 +567,15 @@ $app->get('/delete-restaurantes/:id', function($id) use ($app, $db){
 });
 
 //ACTUALIZAR UN RESTAURANTE
-$app->post('/update-restaurantes/:id', function($id) use ($app, $db){
+$app->put('/update-restaurantes/:id', function($id) use ($app, $db){
 	$json = $app->request->post('json');
 	$data = json_decode($json, true);
 
 	$sql = "UPDATE restaurantes SET ".
 			"nombre = '{$data["nombre"]}', ".
 			"direccion = '{$data["direccion"]}', ".
+			"email = '{$data["email"]}', ".
+			"telefono = '{$data["telefono"]}', ".
 			"latitud = '{$data["latitud"]}', ".
 			"longitud = '{$data["longitud"]}', ";
 
@@ -607,6 +628,7 @@ $app->get('/opiniones/:id_rest', function($id_rest) use ($app, $db) {
 	echo json_encode($result);
 });
 
+
 /* obtener los atributos de la bd */
 $app->get('/atributos', function() use ($app, $db) {
 	$sql = 'DESCRIBE restaurantes';
@@ -641,6 +663,12 @@ $app->post('/upload-datarest', function() use ($app, $db){
 	if(!isset($data['direccion'])){
 		$data['direccion']=null;
 	}
+	if(!isset($data['email'])){
+		$data['email']=null;
+	}
+	if(!isset($data['telefono'])){
+		$data['telefono']=null;
+	}
 	if(!isset($data['latitud'])){
 		$data['latitud']=null;
 	}
@@ -664,6 +692,8 @@ $app->post('/upload-datarest', function() use ($app, $db){
 	$query = "INSERT INTO restaurantes VALUES(NULL,".
 			"'{$data['nombre']}',".
 			"'{$data['direccion']}',".
+			"'{$data['email']}',".
+			"'{$data['telefono']}',".
 			"'{$data['latitud']}',".
 			"'{$data['longitud']}',".
 			"'{$data['url']}',".

@@ -152,7 +152,7 @@ $app->post('/usuarios', function() use ($app, $db){
 });
 
 /* BORRAR UN USUARIO */
-$app->get('/delete-usuarios/:id', function($id) use ($app, $db){
+$app->delete('/delete-usuarios/:id', function($id) use ($app, $db){
 	$sql = 'DELETE FROM usuarios WHERE id = '.$id.';';
 	$query = $db->query($sql);
 
@@ -174,7 +174,7 @@ $app->get('/delete-usuarios/:id', function($id) use ($app, $db){
 
 /* ACTUALIZAR UN USUARIO */
 
-$app->post('/update-usuarios/:id', function($id) use ($app, $db){
+$app->put('/update-usuarios/:id', function($id) use ($app, $db){
 	$json = $app->request->post('json');
 	$data = json_decode($json, true);
 	$cifrado = md5($data['password']);

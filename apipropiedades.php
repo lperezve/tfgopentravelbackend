@@ -92,7 +92,7 @@ $app->get('/validar/:id', function($id) use ($app, $db){
 });
 
 /* DENEGAR UNA PETICIÓN, ES DECIR, BORRARLA */
-$app->get('/denegar/:id', function($id) use ($app, $db){
+$app->delete('/denegar/:id', function($id) use ($app, $db){
 	$sql = 'DELETE 
 			FROM propiedades 
 			WHERE id ='.$id.';';
